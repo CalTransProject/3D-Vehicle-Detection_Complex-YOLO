@@ -1,6 +1,6 @@
 dataset/kitti
 logs/
-#checkpoints/
+checkpoints/
 results/
 src/.idea/
 # Byte-compiled / optimized / DLL files
