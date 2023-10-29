@@ -134,4 +134,4 @@ dmypy.json
 .pyre/
 
 # Additional gitignores
-.idea/Complex-YOLOv4-Pytorch.iml
+.idea/
