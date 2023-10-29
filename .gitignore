@@ -135,3 +135,5 @@ dmypy.json
 
 # Additional gitignores
 .idea/
+dataset/practice/testing
+dataset/practice/training
