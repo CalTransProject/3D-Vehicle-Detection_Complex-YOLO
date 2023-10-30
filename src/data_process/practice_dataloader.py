@@ -16,7 +16,7 @@ from torch.utils.data import DataLoader
 sys.path.append('../')
 
 from data_process.practice_dataset import PracticeDataset
-from data_process.transformation import Compose, OneOf, Random_Rotation, Random_Scaling, Horizontal_Flip, Cutout
+from data_process.transformation_practice import Compose, OneOf, Random_Rotation, Random_Scaling, Horizontal_Flip, Cutout
 
 
 def create_train_dataloader(configs):
