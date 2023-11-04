@@ -52,6 +52,14 @@ def create_val_dataloader(configs):
     val_sampler = None
     val_dataset = PracticeDataset(configs.dataset_dir, mode='val', lidar_transforms=None, aug_transforms=None,
                                multiscale=False, num_samples=configs.num_samples, mosaic=False, random_padding=False)
+
+    # Print the number of samples as specified in the configs
+    print(f"Number of samples specified in configs: {configs.num_samples}")
+
+    # Additionally, you can print the actual number of samples loaded in the dataset
+    # This can be different if the PracticeDataset does some internal handling of num_samples
+    print(f"Actual number of samples in the dataset: {len(val_dataset)}")
+
     if configs.distributed:
         val_sampler = torch.utils.data.distributed.DistributedSampler(val_dataset, shuffle=False)
     val_dataloader = DataLoader(val_dataset, batch_size=configs.batch_size, shuffle=False,

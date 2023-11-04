@@ -22,7 +22,7 @@ import cv2
 
 sys.path.append('../')
 
-from data_process import transformation, practice_bev_utils, practice_data_utils
+from data_process import transformation_practice, practice_bev_utils, practice_data_utils
 import config.practice_config as cnf
 
 
@@ -96,7 +96,7 @@ class PracticeDataset(Dataset):
         labels, noObjectLabels = practice_bev_utils.read_labels_for_bevbox(objects)
 
         if not noObjectLabels:
-            labels[:, 1:] = transformation.camera_to_lidar_box(labels[:, 1:], calib.V2C, calib.R0,
+            labels[:, 1:] = transformation_practice.camera_to_lidar_box(labels[:, 1:], calib.V2C, calib.R0,
                                                                calib.P)  # convert rect cam to velo cord
 
         if self.lidar_transforms is not None:
@@ -185,7 +185,7 @@ class PracticeDataset(Dataset):
             calib = self.get_calib(sample_id)
             labels, noObjectLabels = practice_bev_utils.read_labels_for_bevbox(objects)
             if not noObjectLabels:
-                labels[:, 1:] = transformation.camera_to_lidar_box(labels[:, 1:], calib.V2C, calib.R0,
+                labels[:, 1:] = transformation_practice.camera_to_lidar_box(labels[:, 1:], calib.V2C, calib.R0,
                                                                    calib.P)  # convert rect cam to velo cord
 
             valid_list = []
