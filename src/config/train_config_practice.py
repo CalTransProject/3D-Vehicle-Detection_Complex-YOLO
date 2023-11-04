@@ -33,6 +33,10 @@ def parse_train_configs():
                         help='The path for cfgfile (only for darknet)')
     parser.add_argument('--pretrained_path', type=str, default=None, metavar='PATH',
                         help='the path of the pretrained checkpoint')
+    # ----------Adding this path for the saved trained model after training---------- Jonathan
+    parser.add_argument('--save_path', type=str, default="../checkpoints/Model_complex_yolo_V4_Practice.pth", metavar='PATH',
+                        help='the path of the save checkpoint')
+    # ------------------------------------------------------------------------------- Jonathan
     parser.add_argument('--use_giou_loss', action='store_true',
                         help='If true, use GIoU loss during training. If false, use MSE loss for training')
 
