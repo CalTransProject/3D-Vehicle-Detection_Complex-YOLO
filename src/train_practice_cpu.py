@@ -17,7 +17,8 @@ from tqdm import tqdm
 sys.path.append('./')
 
 from data_process.practice_dataloader import create_train_dataloader, create_val_dataloader
-from models.model_utils import create_model, make_data_parallel, get_num_parameters
+# from models.model_utils_practice_cpu import create_model, make_data_parallel, get_num_parameters
+from models.model_utils_practice_cpu import create_model, get_num_parameters
 from utils.train_utils import create_optimizer, create_lr_scheduler, get_saved_state, save_checkpoint
 from utils.train_utils import reduce_tensor, to_python_float, get_tensorboard_log
 from utils.misc import AverageMeter, ProgressMeter
@@ -88,19 +89,29 @@ def main_worker(gpu_idx, configs):
     # load weight from a checkpoint
     if configs.pretrained_path is not None:
         assert os.path.isfile(configs.pretrained_path), "=> no checkpoint found at '{}'".format(configs.pretrained_path)
-        model.load_state_dict(torch.load(configs.pretrained_path))
+        # ---------------------------------------------------------------
+        # model.load_state_dict(torch.load(configs.pretrained_path))
+        model.load_state_dict(torch.load(configs.pretrained_path, map_location=torch.device('cpu')))
+        # ---------------------------------------------------------------
         if logger is not None:
             logger.info('loaded pretrained model at {}'.format(configs.pretrained_path))
 
     # resume weights of model from a checkpoint
     if configs.resume_path is not None:
         assert os.path.isfile(configs.resume_path), "=> no checkpoint found at '{}'".format(configs.resume_path)
-        model.load_state_dict(torch.load(configs.resume_path))
+        # ---------------------------------------------------------------
+        # model.load_state_dict(torch.load(configs.resume_path))
+        model.load_state_dict(torch.load(configs.pretrained_path, map_location=torch.device('cpu')))
+        # ---------------------------------------------------------------
         if logger is not None:
             logger.info('resume training model from checkpoint {}'.format(configs.resume_path))
 
+    # ---------------------------------------------------------------
     # Data Parallel
-    model = make_data_parallel(model, configs)
+    # model = make_data_parallel(model, configs)
+    # Since we are not using Data Parallel (no GPUs), ensure the model is on CPU
+    model.to('cpu')
+    # ---------------------------------------------------------------
 
     # Make sure to create optimizer after moving the model to cuda
     optimizer = create_optimizer(configs, model)
@@ -111,7 +122,10 @@ def main_worker(gpu_idx, configs):
     if configs.resume_path is not None:
         utils_path = configs.resume_path.replace('Model_', 'Utils_')
         assert os.path.isfile(utils_path), "=> no checkpoint found at '{}'".format(utils_path)
-        utils_state_dict = torch.load(utils_path, map_location='cuda:{}'.format(configs.gpu_idx))
+        # ---------------------------------------------------------------
+        # utils_state_dict = torch.load(utils_path, map_location='cuda:{}'.format(configs.gpu_idx))
+        utils_state_dict = torch.load(utils_path, map_location=torch.device('cpu'))
+        # ---------------------------------------------------------------
         optimizer.load_state_dict(utils_state_dict['optimizer'])
         lr_scheduler.load_state_dict(utils_state_dict['lr_scheduler'])
         configs.start_epoch = utils_state_dict['epoch'] + 1
