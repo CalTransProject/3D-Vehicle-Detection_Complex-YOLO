@@ -33,7 +33,9 @@ def parse_train_configs():
                         help='The path for cfgfile (only for darknet)')
     parser.add_argument('--pretrained_path', type=str, default=None, metavar='PATH',
                         help='the path of the pretrained checkpoint')
-    # ----------Adding this path for the saved trained model after training---------- Jonathan
+    # ----------Adding these paths for the saved trained model after training---------- Jonathan
+    parser.add_argument("--model_def", type=str, default="./config/cfg/complex_yolov4.cfg", metavar="PATH",
+                        help="path to model definition file")
     parser.add_argument('--save_path', type=str, default="../checkpoints/Model_complex_yolo_V4_Practice.pth", metavar='PATH',
                         help='the path of the save checkpoint')
     # ------------------------------------------------------------------------------- Jonathan
