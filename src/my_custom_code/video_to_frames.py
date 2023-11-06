@@ -18,7 +18,7 @@ def FrameCapture(path, output_dir):
         success, image = vidObj.read()
 
         # Checks if the image has been retrieved successfully
-        if not success:git
+        if not success:
             break
 
         # Saves the frames with frame-count as a six-digit number
