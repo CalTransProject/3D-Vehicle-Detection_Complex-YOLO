@@ -137,3 +137,4 @@ dmypy.json
 .idea/
 dataset/practice/testing
 dataset/practice/training
+src/my_custom_code/my_data/
