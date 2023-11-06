@@ -22,7 +22,7 @@ def FrameCapture(path, output_dir):
             break
 
         # Saves the frames with frame-count as a six-digit number
-        cv2.imwrite(f"{output_dir}/{count:06d}.jpg", image)
+        cv2.imwrite(f"{output_dir}/{count:06d}.png", image)
 
         count += 1
 
