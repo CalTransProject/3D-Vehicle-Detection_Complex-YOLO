@@ -3,15 +3,25 @@ import os
 
 
 # Function to extract frames
-def FrameCapture(path, output_dir):
+def FrameCapture(path, output_dir, frames_per_second=10):
     # Path to video file
     vidObj = cv2.VideoCapture(path)
 
-    # Used as counter variable
+    # Getting the frames per second (fps) of the video
+    fps = int(vidObj.get(cv2.CAP_PROP_FPS))
+
+    # Calculating the frame skip interval
+    frame_skip_interval = int(fps / frames_per_second)
+
+    # Counter used for jumping over the Frames
     count = 0
 
+    # Frame counter for image file name count
+    img_count = 0
+
     # checks whether frames were extracted
-    success = 1
+    # success = 1
+    success = True
 
     while success:
         # vidObj object calls read function extract frames
@@ -22,7 +32,13 @@ def FrameCapture(path, output_dir):
             break
 
         # Saves the frames with frame-count as a six-digit number
-        cv2.imwrite(f"{output_dir}/{count:06d}.png", image)
+        # cv2.imwrite(f"{output_dir}/{count:06d}.png", image)
+
+        # Only save every 'frame_skip_interval'-th frame
+        if success and count % frame_skip_interval == 0:
+            # Frame is saved with a six-digit number
+            cv2.imwrite(f"{output_dir}/{img_count:06d}.png", image)
+            img_count += 1
 
         count += 1
 
