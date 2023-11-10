@@ -15,9 +15,8 @@ from torch.utils.data import DataLoader
 
 sys.path.append('../')
 
-from data_process.practice_dataset import PracticeDataset
-from data_process.transformation_practice import Compose, OneOf, Random_Rotation, Random_Scaling, Horizontal_Flip, \
-    Cutout
+from data_process.custom_dataset import CustomDataset
+from data_process.transformation_custom import Compose, OneOf, Random_Rotation, Random_Scaling, Horizontal_Flip, Cutout
 
 
 def create_train_dataloader(configs):
@@ -34,10 +33,10 @@ def create_train_dataloader(configs):
                p=configs.cutout_prob)
     ], p=1.)
 
-    train_dataset = PracticeDataset(configs.dataset_dir, mode='train', lidar_transforms=train_lidar_transforms,
-                                    aug_transforms=train_aug_transforms, multiscale=configs.multiscale_training,
-                                    num_samples=configs.num_samples, mosaic=configs.mosaic,
-                                    random_padding=configs.random_padding)
+    train_dataset = CustomDataset(configs.dataset_dir, mode='train', lidar_transforms=train_lidar_transforms,
+                                  aug_transforms=train_aug_transforms, multiscale=configs.multiscale_training,
+                                  num_samples=configs.num_samples, mosaic=configs.mosaic,
+                                  random_padding=configs.random_padding)
     train_sampler = None
     if configs.distributed:
         train_sampler = torch.utils.data.distributed.DistributedSampler(train_dataset)
@@ -65,14 +64,14 @@ def create_val_dataloader(configs):
     print_configs(configs)
 
     val_sampler = None
-    val_dataset = PracticeDataset(configs.dataset_dir, mode='val', lidar_transforms=None, aug_transforms=None,
-                                  multiscale=False, num_samples=configs.num_samples, mosaic=False, random_padding=False)
+    val_dataset = CustomDataset(configs.dataset_dir, mode='val', lidar_transforms=None, aug_transforms=None,
+                                multiscale=False, num_samples=configs.num_samples, mosaic=False, random_padding=False)
 
     # Print the number of samples as specified in the configs
     print(f"Number of samples specified in configs: {configs.num_samples}")
 
     # Additionally, you can print the actual number of samples loaded in the dataset
-    # This can be different if the PracticeDataset does some internal handling of num_samples
+    # This can be different if the CustomDataset does some internal handling of num_samples
     print(f"Actual number of samples in the dataset: {len(val_dataset)}")
 
     if configs.distributed:
@@ -87,9 +86,8 @@ def create_val_dataloader(configs):
 def create_test_dataloader(configs):
     """Create dataloader for testing phase"""
 
-    test_dataset = PracticeDataset(configs.dataset_dir, mode='test', lidar_transforms=None, aug_transforms=None,
-                                   multiscale=False, num_samples=configs.num_samples, mosaic=False,
-                                   random_padding=False)
+    test_dataset = CustomDataset(configs.dataset_dir, mode='test', lidar_transforms=None, aug_transforms=None,
+                                 multiscale=False, num_samples=configs.num_samples, mosaic=False, random_padding=False)
     test_sampler = None
     if configs.distributed:
         test_sampler = torch.utils.data.distributed.DistributedSampler(test_dataset)
@@ -107,10 +105,10 @@ if __name__ == '__main__':
     import numpy as np
     from easydict import EasyDict as edict
 
-    import data_process.practice_bev_utils as bev_utils
-    from data_process import practice_data_utils
+    import data_process.custom_bev_utils as bev_utils
+    from data_process import custom_data_utils
     from utils.visualization_utils import show_image_with_boxes, merge_rgb_to_bev, invert_target
-    import config.practice_config as cnf
+    import config.custom_config as cnf
 
     parser = argparse.ArgumentParser(description='Complexer YOLO Implementation')
 
@@ -148,7 +146,7 @@ if __name__ == '__main__':
     configs = edict(vars(parser.parse_args()))
     configs.distributed = False  # For testing
     configs.pin_memory = False
-    configs.dataset_dir = os.path.join('../../', 'dataset', 'practice')
+    configs.dataset_dir = os.path.join('../../', 'dataset', 'custom')
 
     if configs.save_img:
         print('saving validation images')
@@ -169,7 +167,7 @@ if __name__ == '__main__':
         if not (configs.mosaic and configs.show_train_data):
             img_file = img_files[0]
             img_rgb = cv2.imread(img_file)
-            calib = practice_data_utils.Calibration(img_file.replace(".png", ".txt").replace("image_2", "calib"))
+            calib = custom_data_utils.Calibration(img_file.replace(".png", ".txt").replace("image_2", "calib"))
             objects_pred = invert_target(targets[:, 1:], calib, img_rgb.shape, RGB_Map=None)
             img_rgb = show_image_with_boxes(img_rgb, objects_pred, calib, False)
 

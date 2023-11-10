@@ -10,6 +10,66 @@ import numpy as np
 import cv2
 
 
+# class Object3d(object):
+#     ''' 3d object label '''
+#
+#     def __init__(self, label_file_line):
+#         data = label_file_line.split(' ')
+#         data[1:] = [float(x) for x in data[1:]]
+#
+#         # Print out the data array content
+#         print("Data array content:", data)
+#
+#         # extract label, truncation, occlusion
+#         self.type = data[0]  # 'Car', 'Pedestrian', ...
+#         self.cls_id = self.cls_type_to_id(self.type)
+#         self.truncation = data[1]  # truncated pixel ratio [0..1]
+#         self.occlusion = int(data[2])  # 0=visible, 1=partly occluded, 2=fully occluded, 3=unknown
+#         self.alpha = data[3]  # object observation angle [-pi..pi]
+#
+#         # extract 2d bounding box in 0-based coordinates
+#         self.xmin = data[4]  # left
+#         self.ymin = data[5]  # top
+#         self.xmax = data[6]  # right
+#         self.ymax = data[7]  # bottom
+#         self.box2d = np.array([self.xmin, self.ymin, self.xmax, self.ymax])
+#
+#         # extract 3d bounding box information
+#         self.h = data[8]  # box height
+#         self.w = data[9]  # box width
+#         self.l = data[10]  # box length (in meters)
+#         self.t = (data[11], data[12], data[13])  # location (x,y,z) in camera coord.
+#         self.dis_to_cam = np.linalg.norm(self.t)
+#         self.ry = data[14]  # yaw angle (around Y-axis in camera coordinates) [-pi..pi]
+#         self.score = data[15] if data.__len__() == 16 else -1.0
+#         self.level_str = None
+#         self.level = self.get_obj_level()
+#
+#     def cls_type_to_id(self, cls_type):
+#         # Car and Van ==> Car class
+#         # Pedestrian and Person_Sitting ==> Pedestrian Class
+#         # CLASS_NAME_TO_ID = {
+#         #     'Car': 0,
+#         #     'Truck': 1,
+#         #     'Motorcycle': 2,
+#         #     'SUV': 3,
+#         #     'Semi': 4,
+#         #     'Bus': 5,
+#         #     'Van': 6
+#         # }
+#         CLASS_NAME_TO_ID = {
+#             'Car': 0,
+#             'Pedestrian': 1,
+#             'Cyclist': 2,
+#             'Van': 0,
+#             'Person_sitting': 1
+#         }
+#         if cls_type not in CLASS_NAME_TO_ID.keys():
+#             return -1
+#         return CLASS_NAME_TO_ID[cls_type]
+#
+
+
 class Object3d(object):
     ''' 3d object label '''
 
@@ -20,34 +80,60 @@ class Object3d(object):
         # Print out the data array content
         print("Data array content:", data)
 
-        # extract label, truncation, occlusion
-        self.type = data[0]  # 'Car', 'Pedestrian', ...
+        # Parse the provided data assuming the format is as described
+        # "position": List of the form [xctr, yctr, zctr, xlen, ylen, zlen, xrot, yrot, zrot]
+        self.type = data[0]  # 'Car', 'Motorcycle', ...
+        self.xctr = float(data[1])
+        self.yctr = float(data[2])
+        self.zctr = float(data[3])
+        self.xlen = float(data[4])
+        self.ylen = float(data[5])
+        self.zlen = float(data[6])
+        self.xrot = float(data[7])
+        self.yrot = float(data[8])
+        self.zrot = float(data[9])
+
+        # Since the angles are provided as rotation along axes, you may need to convert
+        # them to a format your application expects, like a quaternion or a rotation matrix.
+        # Set the attributes as per the defined format
+        self.h = self.ylen  # Height of the bounding box
+        self.w = self.zlen  # Width of the bounding box
+        self.l = self.xlen  # Length of the bounding box
+        self.ry = self.zrot  # Yaw rotation
+
+        # Other attributes like truncation, occlusion, and alpha are expected to follow.
+        self.truncation = float(data[10])
+        self.occlusion = 0 # Default
+        # self.alpha = float(data[12])  # Assuming that 'alpha' is the next field
+
+        # Set the 't' attribute as a tuple of the centroid coordinates
+        self.t = (self.xctr, self.yctr, self.zctr)
+
+        # Placeholder values for other attributes, if necessary
+        self.ry = 0.0  # Placeholder for rotation around the Y-axis
+        self.score = 0.0  # Placeholder for the score
+
+        # Placeholder for the 2D bounding box coordinates (not provided here)
+        self.xmin = None
+        self.ymin = None
+        self.xmax = None
+        self.ymax = None
+        self.box2d = None  # If needed, calculate based on the 3D box and camera parameters
+
+        # Distance to camera (not provided, but could be calculated if needed)
+        self.dis_to_cam = np.linalg.norm(np.array([self.xctr, self.yctr, self.zctr]))
+
+        # Placeholder for class ID since it's not provided
         self.cls_id = self.cls_type_to_id(self.type)
-        self.truncation = data[1]  # truncated pixel ratio [0..1]
-        self.occlusion = int(data[2])  # 0=visible, 1=partly occluded, 2=fully occluded, 3=unknown
-        self.alpha = data[3]  # object observation angle [-pi..pi]
 
-        # extract 2d bounding box in 0-based coordinates
-        self.xmin = data[4]  # left
-        self.ymin = data[5]  # top
-        self.xmax = data[6]  # right
-        self.ymax = data[7]  # bottom
-        self.box2d = np.array([self.xmin, self.ymin, self.xmax, self.ymax])
-
-        # extract 3d bounding box information
-        self.h = data[8]  # box height
-        self.w = data[9]  # box width
-        self.l = data[10]  # box length (in meters)
-        self.t = (data[11], data[12], data[13])  # location (x,y,z) in camera coord.
-        self.dis_to_cam = np.linalg.norm(self.t)
-        self.ry = data[14]  # yaw angle (around Y-axis in camera coordinates) [-pi..pi]
-        self.score = data[15] if data.__len__() == 16 else -1.0
+        # Placeholder for score, level string, and level which may not be provided
+        self.score = None
         self.level_str = None
-        self.level = self.get_obj_level()
+        self.level = None
 
     def cls_type_to_id(self, cls_type):
-        # Car and Van ==> Car class
-        # Pedestrian and Person_Sitting ==> Pedestrian Class
+        # Implement this method based on your class definitions
+        # Return an integer ID for the object type
         CLASS_NAME_TO_ID = {
             'Car': 0,
             'Pedestrian': 1,
@@ -55,9 +141,7 @@ class Object3d(object):
             'Van': 0,
             'Person_sitting': 1
         }
-        if cls_type not in CLASS_NAME_TO_ID.keys():
-            return -1
-        return CLASS_NAME_TO_ID[cls_type]
+        return CLASS_NAME_TO_ID.get(cls_type, -1)
 
     def get_obj_level(self):
         height = float(self.box2d[3]) - float(self.box2d[1]) + 1
@@ -85,12 +169,12 @@ class Object3d(object):
         print('3d bbox location, ry: (%f, %f, %f), %f' % \
               (self.t[0], self.t[1], self.t[2], self.ry))
 
-    def to_practice_format(self):
-        practice_str = '%s %.2f %d %.2f %.2f %.2f %.2f %.2f %.2f %.2f %.2f %.2f %.2f %.2f %.2f %.2f' \
+    def to_custom_format(self):
+        custom_str = '%s %.2f %d %.2f %.2f %.2f %.2f %.2f %.2f %.2f %.2f %.2f %.2f %.2f %.2f %.2f' \
                     % (self.type, self.truncation, int(self.occlusion), self.alpha, self.box2d[0], self.box2d[1],
                        self.box2d[2], self.box2d[3], self.h, self.w, self.l, self.t[0], self.t[1], self.t[2],
                        self.ry, self.score)
-        return practice_str
+        return custom_str
 
 
 class Calibration(object):
