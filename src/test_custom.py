@@ -110,10 +110,15 @@ if __name__ == '__main__':
 
     model.eval()
 
-
+    start_frame_index = 100  # Set this to your desired starting frame index
     test_dataloader = create_test_dataloader(configs)
     with torch.no_grad():
         for batch_idx, (img_paths, imgs_bev) in enumerate(test_dataloader):
+
+            # Skip frames until you reach the starting index
+            if batch_idx < start_frame_index:
+                continue
+
             input_imgs = imgs_bev.to(device=configs.device).float()
             t1 = time_synchronized()
             outputs = model(input_imgs)
@@ -172,7 +177,7 @@ if __name__ == '__main__':
             #         break
             import matplotlib.pyplot as plt
             if configs.show_image:
-                plt.figure(figsize=(10,10))  # You can adjust the figure size as needed
+                plt.figure(figsize=(20,10))  # You can adjust the figure size as needed
                 out_img_rgb = cv2.cvtColor(out_img, cv2.COLOR_BGR2RGB)  # Convert from BGR to RGB
                 plt.imshow(out_img_rgb)
                 plt.axis('off')  # Hide axes
