@@ -17,7 +17,8 @@ sys.path.append('./')
 from data_process.custom_dataloader import create_val_dataloader
 from models.model_utils import create_model
 from utils.misc import AverageMeter, ProgressMeter
-from utils.evaluation_utils_custom import post_processing, get_batch_statistics_rotated_bbox, ap_per_class, load_classes, post_processing_v2
+from utils.evaluation_utils_custom import post_processing, get_batch_statistics_rotated_bbox, ap_per_class, \
+    load_classes, post_processing_v2
 
 
 # def evaluate_mAP(val_loader, model, configs, logger):
@@ -63,16 +64,20 @@ from utils.evaluation_utils_custom import post_processing, get_batch_statistics_
 #
 #     return precision, recall, AP, f1, ap_class
 
-def evaluate_mAP(val_loader, model, configs, logger, criterion):
+def evaluate_mAP(val_loader, model, configs, logger):
     batch_time = AverageMeter('Time', ':6.3f')
     data_time = AverageMeter('Data', ':6.3f')
-    losses = AverageMeter('Loss', ':.4e')  # Meter for tracking the loss
+    # losses = AverageMeter('Loss', ':.4e')
 
-    progress = ProgressMeter(len(val_loader), [batch_time, data_time, losses],
+    progress = ProgressMeter(len(val_loader), [batch_time, data_time],
                              prefix="Evaluation phase...")
+
+    # progress = ProgressMeter(len(val_loader), [batch_time, data_time, losses],
+    #                          prefix="Evaluation phase...")
+
     labels = []
     sample_metrics = []  # List of tuples (TP, confs, pred)
-    total_loss = 0.0  # Variable to store total loss
+    # total_loss = 0.0  # Variable to store total loss
     # switch to evaluate mode
     model.eval()
     with torch.no_grad():
@@ -85,11 +90,11 @@ def evaluate_mAP(val_loader, model, configs, logger, criterion):
             # Rescale x, y, w, h of targets ((box_idx, class, x, y, w, l, im, re))
             targets[:, 2:6] *= configs.img_size
             imgs = imgs.to(configs.device, non_blocking=True)
-            targets = targets.to(configs.device, non_blocking=True) # New add
+            # targets = targets.to(configs.device, non_blocking=True) # New add
 
             outputs = model(imgs)
-            loss = criterion(outputs, targets)  # Compute the loss
-            total_loss += loss.item()  # Accumulate the loss
+            # loss = criterion(outputs, targets)  # Compute the loss
+            # total_loss += loss.item()  # Accumulate the loss
 
             outputs = post_processing_v2(outputs, conf_thresh=configs.conf_thresh, nms_thresh=configs.nms_thresh)
 
@@ -110,10 +115,12 @@ def evaluate_mAP(val_loader, model, configs, logger, criterion):
         true_positives, pred_scores, pred_labels = [np.concatenate(x, 0) for x in list(zip(*sample_metrics))]
         precision, recall, AP, f1, ap_class = ap_per_class(true_positives, pred_scores, pred_labels, labels)
 
-        average_val_loss = total_loss / len(val_loader)  # Calculate average validation loss
+        # average_val_loss = total_loss / len(val_loader)  # Calculate average validation loss
 
     # return the average validation loss along with the other metrics
-    return precision, recall, AP, f1, ap_class, average_val_loss
+    # return precision, recall, AP, f1, ap_class, average_val_loss
+    return precision, recall, AP, f1, ap_class
+
 
 def parse_eval_configs():
     parser = argparse.ArgumentParser(description='Demonstration config for Complex YOLO Implementation')
@@ -125,7 +132,8 @@ def parse_eval_configs():
                         help='The path for cfgfile (only for darknet)')
     parser.add_argument("--model_def", type=str, default="./config/cfg/complex_yolov4.cfg", metavar="PATH",
                         help="path to model definition file")
-    parser.add_argument('--pretrained_path', type=str, default="../checkpoints/complex_yolov4/complex_yolov4_mse_loss.pth", metavar='PATH',
+    parser.add_argument('--pretrained_path', type=str,
+                        default="../checkpoints/complex_yolov4/complex_yolov4_mse_loss.pth", metavar='PATH',
                         help='the path of the pretrained checkpoint')
     parser.add_argument('--use_giou_loss', action='store_true',
                         help='If true, use GIoU loss during training. If false, use MSE loss for training')
@@ -170,7 +178,8 @@ if __name__ == '__main__':
     class_names = load_classes(configs.classnames_infor_path)
 
     # Set device based on CUDA availability and configs
-    configs.device = torch.device('cuda:{}'.format(configs.gpu_idx) if torch.cuda.is_available() and not configs.no_cuda else 'cpu')
+    configs.device = torch.device(
+        'cuda:{}'.format(configs.gpu_idx) if torch.cuda.is_available() and not configs.no_cuda else 'cpu')
 
     model = create_model(configs)
     # model.print_network()
@@ -195,6 +204,12 @@ if __name__ == '__main__':
     print("\nDone computing mAP...\n")
     for idx, cls in enumerate(ap_class):
         print("\t>>>\t Class {} ({}): precision = {:.4f}, recall = {:.4f}, AP = {:.4f}, f1: {:.4f}".format(cls, \
-                class_names[cls][:3], precision[idx], recall[idx], AP[idx], f1[idx]))
+                                                                                                           class_names[
+                                                                                                               cls][:3],
+                                                                                                           precision[
+                                                                                                               idx],
+                                                                                                           recall[idx],
+                                                                                                           AP[idx],
+                                                                                                           f1[idx]))
 
     print("\nmAP: {}\n".format(AP.mean()))
