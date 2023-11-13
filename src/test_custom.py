@@ -177,7 +177,7 @@ if __name__ == '__main__':
             #         break
             import matplotlib.pyplot as plt
             if configs.show_image:
-                plt.figure(figsize=(20,10))  # You can adjust the figure size as needed
+                plt.figure(figsize=(10,10))  # You can adjust the figure size as needed
                 out_img_rgb = cv2.cvtColor(out_img, cv2.COLOR_BGR2RGB)  # Convert from BGR to RGB
                 plt.imshow(out_img_rgb)
                 plt.axis('off')  # Hide axes
