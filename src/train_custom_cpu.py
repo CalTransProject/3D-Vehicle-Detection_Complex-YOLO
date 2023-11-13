@@ -175,7 +175,12 @@ def main_worker(gpu_idx, configs):
                 tb_writer.add_scalars('Validation', val_metrics_dict, epoch)
 
         # Save checkpoint
-        if configs.is_master_node and ((epoch % configs.checkpoint_freq) == 0):
+        # if configs.is_master_node and ((epoch % configs.checkpoint_freq) == 0):
+        #     model_state_dict, utils_state_dict = get_saved_state(model, optimizer, lr_scheduler, epoch, configs)
+        #     save_checkpoint(configs.checkpoints_dir, configs.saved_fn, model_state_dict, utils_state_dict, epoch)
+
+        # Save checkpoint after every epoch
+        if configs.is_master_node:
             model_state_dict, utils_state_dict = get_saved_state(model, optimizer, lr_scheduler, epoch, configs)
             save_checkpoint(configs.checkpoints_dir, configs.saved_fn, model_state_dict, utils_state_dict, epoch)
 
