@@ -96,6 +96,14 @@ def main_worker(gpu_idx, configs):
         if logger is not None:
             logger.info('loaded pretrained model at {}'.format(configs.pretrained_path))
 
+        # Make a deep copy of the model's state dict
+        original_state_dict = {name: tensor.clone() for name, tensor in model.state_dict().items()}
+
+        # Save the copied state dict to the specified save path
+        torch.save(original_state_dict, configs.save_path)
+        if logger is not None:
+            logger.info(f"The copy of the pre-trained model saved at {configs.save_path}")
+
     # resume weights of model from a checkpoint
     if configs.resume_path is not None:
         assert os.path.isfile(configs.resume_path), "=> no checkpoint found at '{}'".format(configs.resume_path)

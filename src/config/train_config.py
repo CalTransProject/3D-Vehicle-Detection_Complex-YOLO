@@ -21,6 +21,9 @@ def parse_train_configs():
                         help='re-produce the results with seed random')
     parser.add_argument('--saved_fn', type=str, default='complexer_yolo', metavar='FN',
                         help='The name using for saving logs, models,...')
+    # For Transfer Learning
+    parser.add_argument('--save_path', type=str, default='../checkpoints/transfer_learning/Model_complex_yolo_V4_Custom.pth',
+                        help='The path to save the copy of the pre-trained model.')
 
     parser.add_argument('--working-dir', type=str, default='../', metavar='PATH',
                         help='The ROOT working directory')
