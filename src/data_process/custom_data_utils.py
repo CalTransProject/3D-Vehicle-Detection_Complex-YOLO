@@ -143,13 +143,15 @@ class Object3d(object):
         # }
 
         CLASS_NAME_TO_ID = {
-            'Car': 0,
-            'Truck': 1,
-            'Motorcycle': 2,
-            'SUV': 3,
-            'Semi': 4,
-            'Bus': 5,
-            'Van': 6
+            'Car': 0,  # Original class
+            'Pedestrian': 1,  # Original class
+            'Cyclist': 2,  # Original class
+            'Truck': 3,  # New class
+            'Motorcycle': 4,  # New class
+            'SUV': 5,  # New class
+            'Semi': 6,  # New class
+            'Bus': 7,  # New class
+            'Van': 8  # New class
         }
 
         return CLASS_NAME_TO_ID.get(cls_type, -1)

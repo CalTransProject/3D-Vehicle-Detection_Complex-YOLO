@@ -229,19 +229,24 @@ def invert_target(targets, calib, img_shape_2d, RGB_Map=None):
         if l[0] == 0:
             str = "Car"
         elif l[0] == 1:
-            str = "Truck"
+            str = "Pedestrian"
         elif l[0] == 2:
-            str = "Motorcycle"
+            str = "Cyclist"
         elif l[0] == 3:
-            str = "SUV"
+            str = "Truck"
         elif l[0] == 4:
-            str = "Semi"
+            str = "Motorcycle"
         elif l[0] == 5:
-            str = "Bus"
+            str = "SUV"
         elif l[0] == 6:
+            str = "Semi"
+        elif l[0] == 7:
+            str = "Bus"
+        elif l[0] == 8:
             str = "Van"
         else:
             str = "Ignore"
+
         line = '%s -1 -1 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0' % str
 
         # if l[0] == 0:
@@ -315,19 +320,24 @@ def predictions_to_custom_format(img_detections, calib, img_shape_2d, img_size, 
         if l[0] == 0:
             str = "Car"
         elif l[0] == 1:
-            str = "Truck"
+            str = "Pedestrian"
         elif l[0] == 2:
-            str = "Motorcycle"
+            str = "Cyclist"
         elif l[0] == 3:
-            str = "SUV"
+            str = "Truck"
         elif l[0] == 4:
-            str = "Semi"
+            str = "Motorcycle"
         elif l[0] == 5:
-            str = "Bus"
+            str = "SUV"
         elif l[0] == 6:
+            str = "Semi"
+        elif l[0] == 7:
+            str = "Bus"
+        elif l[0] == 8:
             str = "Van"
         else:
             str = "Ignore"
+
         line = '%s -1 -1 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0' % str
 
         # if l[0] == 0:

@@ -1,24 +1,19 @@
 import numpy as np
 
-class_list = ["Car", "Truck", "Motorcycle", "SUV", "Semi", "Bus", "Van"]
+class_list = ["Car", "Pedestrian", "Cyclist", "Truck", "Motorcycle", "SUV", "Semi", "Bus", "Van"]
+
 CLASS_NAME_TO_ID = {
-    'Car': 0,
-    'Truck': 1,
-    'Motorcycle': 2,
-    'SUV': 3,
-    'Semi': 4,
-    'Bus': 5,
-    'Van': 6
+    'Car': 0,           # Original class
+    'Pedestrian': 1,    # Original class
+    'Cyclist': 2,       # Original class
+    'Truck': 3,         # New class
+    'Motorcycle': 4,    # New class
+    'SUV': 5,           # New class
+    'Semi': 6,          # New class
+    'Bus': 7,           # New class
+    'Van': 8            # New class
 }
 
-# class_list = ["Car", "Pedestrian", "Cyclist"]
-# CLASS_NAME_TO_ID = {
-#     'Car': 0,
-#     'Pedestrian': 1,
-#     'Cyclist': 2,
-#     'Van': 0,
-#     'Person_sitting': 1,
-# }
 
 # Front side (of vehicle) Point Cloud boundary for BEV
 boundary = {
