@@ -134,13 +134,24 @@ class Object3d(object):
     def cls_type_to_id(self, cls_type):
         # Implement this method based on your class definitions
         # Return an integer ID for the object type
+        # CLASS_NAME_TO_ID = {
+        #     'Car': 0,
+        #     'Pedestrian': 1,
+        #     'Cyclist': 2,
+        #     'Van': 0,
+        #     'Person_sitting': 1
+        # }
+
         CLASS_NAME_TO_ID = {
             'Car': 0,
-            'Pedestrian': 1,
-            'Cyclist': 2,
-            'Van': 0,
-            'Person_sitting': 1
+            'Truck': 1,
+            'Motorcycle': 2,
+            'SUV': 3,
+            'Semi': 4,
+            'Bus': 5,
+            'Van': 6
         }
+
         return CLASS_NAME_TO_ID.get(cls_type, -1)
 
     def get_obj_level(self):

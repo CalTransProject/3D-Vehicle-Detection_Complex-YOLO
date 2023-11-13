@@ -24,7 +24,7 @@ from utils.train_utils import reduce_tensor, to_python_float, get_tensorboard_lo
 from utils.misc import AverageMeter, ProgressMeter
 from utils.logger import Logger
 from config.train_config_custom import parse_train_configs
-from evaluate import evaluate_mAP
+from evaluate_custom_cpu import evaluate_mAP
 
 
 def main():
@@ -141,11 +141,16 @@ def main_worker(gpu_idx, configs):
     if logger is not None:
         logger.info('number of batches in training set: {}'.format(len(train_dataloader)))
 
+    # Define your loss function (criterion)
+    criterion = torch.nn.MSELoss()
+
     if configs.evaluate:
         val_dataloader = create_val_dataloader(configs)
-        precision, recall, AP, f1, ap_class = evaluate_mAP(val_dataloader, model, configs, None)
+        # precision, recall, AP, f1, ap_class = evaluate_mAP(val_dataloader, model, configs, None)
+        precision, recall, AP, f1, ap_class, val_loss = evaluate_mAP(val_dataloader, model, configs, logger, criterion)
         print('Evaluate - precision: {}, recall: {}, AP: {}, f1: {}, ap_class: {}'.format(precision, recall, AP, f1,
                                                                                           ap_class))
+
         print('mAP {}'.format(AP.mean()))
         return
 
@@ -163,16 +168,34 @@ def main_worker(gpu_idx, configs):
         if not configs.no_val:
             val_dataloader = create_val_dataloader(configs)
             print('number of batches in val_dataloader: {}'.format(len(val_dataloader)))
-            precision, recall, AP, f1, ap_class = evaluate_mAP(val_dataloader, model, configs, logger)
-            val_metrics_dict = {
-                'precision': precision.mean(),
-                'recall': recall.mean(),
-                'AP': AP.mean(),
-                'f1': f1.mean(),
-                'ap_class': ap_class.mean()
-            }
+            # precision, recall, AP, f1, ap_class = evaluate_mAP(val_dataloader, model, configs, logger)
+            precision, recall, AP, f1, ap_class, val_loss = evaluate_mAP(val_dataloader, model, configs, logger,
+                                                                         criterion)
+
+            # val_metrics_dict = {
+            #     'precision': precision.mean(),
+            #     'recall': recall.mean(),
+            #     'AP': AP.mean(),
+            #     'f1': f1.mean(),
+            #     'ap_class': ap_class.mean()
+            # }
+
             if tb_writer is not None:
-                tb_writer.add_scalars('Validation', val_metrics_dict, epoch)
+                val_metrics_dict = {
+                    'precision': precision.mean(),
+                    'recall': recall.mean(),
+                    'AP': AP.mean(),
+                    'f1': f1.mean(),
+                    'ap_class': ap_class.mean(),
+                    'val_loss': val_loss  # Include the validation loss
+                }
+            # if tb_writer is not None:
+            #     tb_writer.add_scalars('Validation', val_metrics_dict, epoch)
+
+            # Log the validation metrics to TensorBoard
+            if tb_writer is not None:
+                for key, value in val_metrics_dict.items():
+                    tb_writer.add_scalar(f'Validation/{key}', value, epoch)
 
         # Save checkpoint
         # if configs.is_master_node and ((epoch % configs.checkpoint_freq) == 0):

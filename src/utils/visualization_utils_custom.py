@@ -226,29 +226,33 @@ def invert_target(targets, calib, img_shape_2d, RGB_Map=None):
     objects_new = []
     corners3d = []
     for index, l in enumerate(predictions):
-        # if l[0] == 0:
-        #     str = "Car"
-        # elif l[0] == 1:
-        #     str = "Truck"
-        # elif l[0] == 2:
-        #     str = "Motorcycle"
-        # elif l[0] == 3:
-        #     str = "SUV"
-        # elif l[0] == 4:
-        #     str = "Semi"
-        # elif l[0] == 5:
-        #     str = "Bus"
-        # elif l[0] == 6:
-        #     str = "Van"
         if l[0] == 0:
             str = "Car"
         elif l[0] == 1:
-            str = "Pedestrian"
+            str = "Truck"
         elif l[0] == 2:
-            str = "Cyclist"
+            str = "Motorcycle"
+        elif l[0] == 3:
+            str = "SUV"
+        elif l[0] == 4:
+            str = "Semi"
+        elif l[0] == 5:
+            str = "Bus"
+        elif l[0] == 6:
+            str = "Van"
         else:
             str = "Ignore"
         line = '%s -1 -1 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0' % str
+
+        # if l[0] == 0:
+        #     str = "Car"
+        # elif l[0] == 1:
+        #     str = "Pedestrian"
+        # elif l[0] == 2:
+        #     str = "Cyclist"
+        # else:
+        #     str = "Ignore"
+        # line = '%s -1 -1 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0' % str
 
         obj = custom_data_utils.Object3d(line)
         obj.t = l[1:4]
@@ -308,29 +312,33 @@ def predictions_to_custom_format(img_detections, calib, img_shape_2d, img_size, 
     objects_new = []
     corners3d = []
     for index, l in enumerate(predictions):
-        # if l[0] == 0:
-        #     str = "Car"
-        # elif l[0] == 1:
-        #     str = "Truck"
-        # elif l[0] == 2:
-        #     str = "Motorcycle"
-        # elif l[0] == 3:
-        #     str = "SUV"
-        # elif l[0] == 4:
-        #     str = "Semi"
-        # elif l[0] == 5:
-        #     str = "Bus"
-        # elif l[0] == 6:
-        #     str = "Van"
         if l[0] == 0:
             str = "Car"
         elif l[0] == 1:
-            str = "Pedestrian"
+            str = "Truck"
         elif l[0] == 2:
-            str = "Cyclist"
+            str = "Motorcycle"
+        elif l[0] == 3:
+            str = "SUV"
+        elif l[0] == 4:
+            str = "Semi"
+        elif l[0] == 5:
+            str = "Bus"
+        elif l[0] == 6:
+            str = "Van"
         else:
             str = "Ignore"
         line = '%s -1 -1 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0' % str
+
+        # if l[0] == 0:
+        #     str = "Car"
+        # elif l[0] == 1:
+        #     str = "Pedestrian"
+        # elif l[0] == 2:
+        #     str = "Cyclist"
+        # else:
+        #     str = "Ignore"
+        # line = '%s -1 -1 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0' % str
 
         obj = custom_data_utils.Object3d(line)
         obj.t = l[1:4]
