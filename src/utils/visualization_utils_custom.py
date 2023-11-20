@@ -7,7 +7,7 @@ import cv2
 
 sys.path.append('../')
 
-from data_process import custom_data_utils, custom_bev_utils, transformation
+from data_process import custom_data_utils, custom_bev_utils, transformation_custom
 import config.custom_config as cnf
 
 
@@ -152,12 +152,20 @@ def show_image_with_boxes(img, objects, calib, show3d=False):
     ''' Show image with 2D bounding boxes '''
 
     img2 = np.copy(img)  # for 3d bbox
+    shift_factor_y = 400  # The number of pixels to shift the boxes down ---- 11/19/2023 Jonathan C
+    shift_factor_x = 400  # The number of pixels to shift the boxes to the right ---- 11/19/2023 Jonathan C
+
     for obj in objects:
         if obj.type == 'DontCare': continue
         # cv2.rectangle(img2, (int(obj.xmin),int(obj.ymin)),
         #    (int(obj.xmax),int(obj.ymax)), (0,255,0), 2)
         box3d_pts_2d, box3d_pts_3d = custom_data_utils.compute_box_3d(obj, calib.P)
         if box3d_pts_2d is not None:
+
+            # Shift the bounding box down and to the right
+            box3d_pts_2d[:, 0] += shift_factor_x  # Shift x coordinate ---- 11/19/2023 Jonathan C
+            box3d_pts_2d[:, 1] += shift_factor_y  # Shift y coordinate ---- 11/19/2023 Jonathan C
+
             img2 = custom_data_utils.draw_projected_box3d(img2, box3d_pts_2d, cnf.colors[obj.cls_id])
     if show3d:
         cv2.imshow("img", img2)
@@ -221,34 +229,10 @@ def invert_target(targets, calib, img_shape_2d, RGB_Map=None):
     predictions = targets
     predictions = custom_bev_utils.inverse_yolo_target(predictions, cnf.boundary)
     if predictions.shape[0]:
-        predictions[:, 1:] = transformation.lidar_to_camera_box(predictions[:, 1:], calib.V2C, calib.R0, calib.P)
+        predictions[:, 1:] = transformation_custom.lidar_to_camera_box(predictions[:, 1:], calib.V2C, calib.R0, calib.P)
 
     objects_new = []
     corners3d = []
-    # for index, l in enumerate(predictions):
-    #     if l[0] == 0:
-    #         str = "Car"
-    #     elif l[0] == 1:
-    #         str = "Pedestrian"
-    #     elif l[0] == 2:
-    #         str = "Cyclist"
-    #     elif l[0] == 3:
-    #         str = "Truck"
-    #     elif l[0] == 4:
-    #         str = "Motorcycle"
-    #     elif l[0] == 5:
-    #         str = "SUV"
-    #     elif l[0] == 6:
-    #         str = "Semi"
-    #     elif l[0] == 7:
-    #         str = "Bus"
-    #     elif l[0] == 8:
-    #         str = "Van"
-    #     else:
-    #         str = "Ignore"
-    #
-    #     line = '%s -1 -1 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0' % str
-
     for index, l in enumerate(predictions):
         if l[0] == 0:
             str = "Car"
@@ -256,9 +240,33 @@ def invert_target(targets, calib, img_shape_2d, RGB_Map=None):
             str = "Pedestrian"
         elif l[0] == 2:
             str = "Cyclist"
+        elif l[0] == 3:
+            str = "Truck"
+        elif l[0] == 4:
+            str = "Motorcycle"
+        elif l[0] == 5:
+            str = "SUV"
+        elif l[0] == 6:
+            str = "Semi"
+        elif l[0] == 7:
+            str = "Bus"
+        elif l[0] == 8:
+            str = "Van"
         else:
             str = "Ignore"
+
         line = '%s -1 -1 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0' % str
+
+    # for index, l in enumerate(predictions):
+    #     if l[0] == 0:
+    #         str = "Car"
+    #     elif l[0] == 1:
+    #         str = "Pedestrian"
+    #     elif l[0] == 2:
+    #         str = "Cyclist"
+    #     else:
+    #         str = "Ignore"
+    #     line = '%s -1 -1 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0' % str
 
         obj = custom_data_utils.Object3d(line)
         obj.t = l[1:4]
@@ -293,7 +301,7 @@ def invert_target(targets, calib, img_shape_2d, RGB_Map=None):
     if RGB_Map is not None:
         labels, noObjectLabels = custom_bev_utils.read_labels_for_bevbox(objects_new)
         if not noObjectLabels:
-            labels[:, 1:] = transformation.camera_to_lidar_box(labels[:, 1:], calib.V2C, calib.R0,
+            labels[:, 1:] = transformation_custom.camera_to_lidar_box(labels[:, 1:], calib.V2C, calib.R0,
                                                                calib.P)  # convert rect cam to velo cord
 
         target = custom_bev_utils.build_yolo_target(labels)
@@ -313,33 +321,10 @@ def predictions_to_custom_format(img_detections, calib, img_shape_2d, img_size, 
 
     predictions = custom_bev_utils.inverse_yolo_target(np.array(predictions), cnf.boundary)
     if predictions.shape[0]:
-        predictions[:, 1:] = transformation.lidar_to_camera_box(predictions[:, 1:], calib.V2C, calib.R0, calib.P)
+        predictions[:, 1:] = transformation_custom.lidar_to_camera_box(predictions[:, 1:], calib.V2C, calib.R0, calib.P)
 
     objects_new = []
     corners3d = []
-    # for index, l in enumerate(predictions):
-    #     if l[0] == 0:
-    #         str = "Car"
-    #     elif l[0] == 1:
-    #         str = "Pedestrian"
-    #     elif l[0] == 2:
-    #         str = "Cyclist"
-    #     elif l[0] == 3:
-    #         str = "Truck"
-    #     elif l[0] == 4:
-    #         str = "Motorcycle"
-    #     elif l[0] == 5:
-    #         str = "SUV"
-    #     elif l[0] == 6:
-    #         str = "Semi"
-    #     elif l[0] == 7:
-    #         str = "Bus"
-    #     elif l[0] == 8:
-    #         str = "Van"
-    #     else:
-    #         str = "Ignore"
-    #     line = '%s -1 -1 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0' % str
-
     for index, l in enumerate(predictions):
         if l[0] == 0:
             str = "Car"
@@ -347,9 +332,32 @@ def predictions_to_custom_format(img_detections, calib, img_shape_2d, img_size, 
             str = "Pedestrian"
         elif l[0] == 2:
             str = "Cyclist"
+        elif l[0] == 3:
+            str = "Truck"
+        elif l[0] == 4:
+            str = "Motorcycle"
+        elif l[0] == 5:
+            str = "SUV"
+        elif l[0] == 6:
+            str = "Semi"
+        elif l[0] == 7:
+            str = "Bus"
+        elif l[0] == 8:
+            str = "Van"
         else:
             str = "Ignore"
         line = '%s -1 -1 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0' % str
+
+    # for index, l in enumerate(predictions):
+    #     if l[0] == 0:
+    #         str = "Car"
+    #     elif l[0] == 1:
+    #         str = "Pedestrian"
+    #     elif l[0] == 2:
+    #         str = "Cyclist"
+    #     else:
+    #         str = "Ignore"
+    #     line = '%s -1 -1 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0' % str
 
         obj = custom_data_utils.Object3d(line)
         obj.t = l[1:4]
@@ -384,7 +392,7 @@ def predictions_to_custom_format(img_detections, calib, img_shape_2d, img_size, 
     if RGB_Map is not None:
         labels, noObjectLabels = custom_bev_utils.read_labels_for_bevbox(objects_new)
         if not noObjectLabels:
-            labels[:, 1:] = transformation.camera_to_lidar_box(labels[:, 1:], calib.V2C, calib.R0,
+            labels[:, 1:] = transformation_custom.camera_to_lidar_box(labels[:, 1:], calib.V2C, calib.R0,
                                                                calib.P)  # convert rect cam to velo cord
 
         target = custom_bev_utils.build_yolo_target(labels)

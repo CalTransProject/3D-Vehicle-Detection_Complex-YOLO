@@ -89,9 +89,30 @@ def main_worker(gpu_idx, configs):
     # load weight from a checkpoint
     if configs.pretrained_path is not None:
         assert os.path.isfile(configs.pretrained_path), "=> no checkpoint found at '{}'".format(configs.pretrained_path)
+
+        # ---------------------------------------------------------------
+        # CHANGE: PARTIALLY LOAD PRETRAINED WEIGHTS TO HANDLE LAYERS MISMATCH
+        # Load the pretrained weights
+        pretrained_dict = torch.load(configs.pretrained_path, map_location=configs.device)
+
+        # Get the current model state dict
+        model_dict = model.state_dict()
+
+        # Filter out weights that don't match in size
+        pretrained_dict = {k: v for k, v in pretrained_dict.items() if
+                           k in model_dict and model_dict[k].size() == v.size()}
+
+        # Update the current model's state dict
+        model_dict.update(pretrained_dict)
+
+        # Load the updated state dict into the model
+        model.load_state_dict(model_dict)
+        # ---------------------------------------------------------------
+
         # ---------------------------------------------------------------
         # model.load_state_dict(torch.load(configs.pretrained_path))
-        model.load_state_dict(torch.load(configs.pretrained_path, map_location=torch.device('cpu')))
+        # model.load_state_dict(torch.load(configs.pretrained_path, map_location=torch.device('cpu')))
+
         # ---------------------------------------------------------------
         if logger is not None:
             logger.info('loaded pretrained model at {}'.format(configs.pretrained_path))
@@ -100,8 +121,13 @@ def main_worker(gpu_idx, configs):
     if configs.resume_path is not None:
         assert os.path.isfile(configs.resume_path), "=> no checkpoint found at '{}'".format(configs.resume_path)
         # ---------------------------------------------------------------
+        # CHANGE: ENSURE CORRECT PATH IS USED FOR RESUMING TRAINING
         # model.load_state_dict(torch.load(configs.resume_path))
-        model.load_state_dict(torch.load(configs.pretrained_path, map_location=torch.device('cpu')))
+        model.load_state_dict(torch.load(configs.resume_path, map_location=configs.device))
+        # ---------------------------------------------------------------
+        # ---------------------------------------------------------------
+        # model.load_state_dict(torch.load(configs.resume_path))
+        # model.load_state_dict(torch.load(configs.pretrained_path, map_location=torch.device('cpu')))
         # ---------------------------------------------------------------
         if logger is not None:
             logger.info('resume training model from checkpoint {}'.format(configs.resume_path))
@@ -109,8 +135,9 @@ def main_worker(gpu_idx, configs):
     # ---------------------------------------------------------------
     # Data Parallel
     # model = make_data_parallel(model, configs)
+    # CHANGE: CONSIDER USING GPU IF AVAILABLE
     # Since we are not using Data Parallel (no GPUs), ensure the model is on CPU
-    model.to('cpu')
+    model.to(configs.device)
     # ---------------------------------------------------------------
 
     # Make sure to create optimizer after moving the model to cuda
