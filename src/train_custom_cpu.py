@@ -4,6 +4,7 @@ import sys
 import random
 import os
 import warnings
+import gc
 
 warnings.filterwarnings("ignore", category=UserWarning)
 
@@ -288,6 +289,10 @@ def train_one_epoch(train_dataloader, model, optimizer, lr_scheduler, epoch, con
                     tb_writer.add_scalar('LR', lr_scheduler.get_lr()[0], global_step)
             # zero the parameter gradients
             optimizer.zero_grad()
+
+        # Clearing the CUDA cache ----GPU 11/20/2023 Jonathan C.
+        torch.cuda.empty_cache()
+        gc.collect()
 
         if configs.distributed:
             reduced_loss = reduce_tensor(total_loss.data, configs.world_size)
