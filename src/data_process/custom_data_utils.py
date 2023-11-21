@@ -142,29 +142,29 @@ class Object3d(object):
         #     'Person_sitting': 1
         # }
 
-        # CLASS_NAME_TO_ID = {
-        #     'Car': 0,
-        #     'Pedestrian': 1,
-        #     'Cyclist': 2,
-        #     'Van': 0,
-        #     'Person_sitting': 1,
-        #     'Truck': 0,
-        #     'Motorcycle': 2,
-        #     'SUV': 0,
-        #     'Semi': 0,
-        #     'Bus': 0,
-        # }
         CLASS_NAME_TO_ID = {
-            'Car': 0,  # Original class
-            'Pedestrian': 1,  # Original class
-            'Cyclist': 2,  # Original class
-            'Truck': 3,  # New class
-            'Motorcycle': 4,  # New class
-            'SUV': 5,  # New class
-            'Semi': 6,  # New class
-            'Bus': 7,  # New class
-            'Van': 8  # New class
+            'Car': 0,
+            'Pedestrian': 1,
+            'Cyclist': 2,
+            'Van': 0,
+            'Person_sitting': 1,
+            'Truck': 0,
+            'Motorcycle': 2,
+            'SUV': 0,
+            'Semi': 0,
+            'Bus': 0,
         }
+        # CLASS_NAME_TO_ID = {
+        #     'Car': 0,  # Original class
+        #     'Pedestrian': 1,  # Original class
+        #     'Cyclist': 2,  # Original class
+        #     'Truck': 3,  # New class
+        #     'Motorcycle': 4,  # New class
+        #     'SUV': 5,  # New class
+        #     'Semi': 6,  # New class
+        #     'Bus': 7,  # New class
+        #     'Van': 8  # New class
+        # }
 
         return CLASS_NAME_TO_ID.get(cls_type, -1)
 
