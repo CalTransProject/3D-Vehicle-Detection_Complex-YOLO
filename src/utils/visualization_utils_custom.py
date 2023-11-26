@@ -152,8 +152,10 @@ def show_image_with_boxes(img, objects, calib, show3d=False):
     ''' Show image with 2D bounding boxes '''
 
     img2 = np.copy(img)  # for 3d bbox
-    shift_factor_y = 400  # The number of pixels to shift the boxes down ---- 11/19/2023 Jonathan C
-    shift_factor_x = 400  # The number of pixels to shift the boxes to the right ---- 11/19/2023 Jonathan C
+    shift_factor_y = 350  # The number of pixels to shift the boxes down ---- 11/19/2023 Jonathan C
+    shift_factor_x = 450  # The number of pixels to shift the boxes to the right ---- 11/19/2023 Jonathan C
+    # shift_factor_y = 0  # The number of pixels to shift the boxes down ---- 11/21/2023 Jonathan C
+    # shift_factor_x = 0  # The number of pixels to shift the boxes to the right ---- 11/21/2023 Jonathan C
 
     for obj in objects:
         if obj.type == 'DontCare': continue
@@ -166,7 +168,8 @@ def show_image_with_boxes(img, objects, calib, show3d=False):
             box3d_pts_2d[:, 0] += shift_factor_x  # Shift x coordinate ---- 11/19/2023 Jonathan C
             box3d_pts_2d[:, 1] += shift_factor_y  # Shift y coordinate ---- 11/19/2023 Jonathan C
 
-            img2 = custom_data_utils.draw_projected_box3d(img2, box3d_pts_2d, cnf.colors[obj.cls_id])
+            # Comment out to disable 2d boxes ---- 11/25/2023
+            # img2 = custom_data_utils.draw_projected_box3d(img2, box3d_pts_2d, cnf.colors[obj.cls_id])
     if show3d:
         cv2.imshow("img", img2)
     return img2

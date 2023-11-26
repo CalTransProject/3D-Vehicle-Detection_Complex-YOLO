@@ -110,7 +110,8 @@ if __name__ == '__main__':
 
     model.eval()
 
-    start_frame_index = 100  # Set this to your desired starting frame index
+    # start_frame_index = 100  # Set this to your desired starting frame index
+    start_frame_index = 230  # Set this to your desired starting frame index
     test_dataloader = create_test_dataloader(configs)
     with torch.no_grad():
         for batch_idx, (img_paths, imgs_bev) in enumerate(test_dataloader):
