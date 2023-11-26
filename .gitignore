@@ -143,5 +143,6 @@ dataset/custom/training
 
 src/my_custom_code/my_data_3d/
 src/my_custom_code/my_data_2d/
+src/my_custom_code/my_data_labels/
 src/my_custom_code/testing_purposes_data/
 src/my_custom_code/Notes.txt
