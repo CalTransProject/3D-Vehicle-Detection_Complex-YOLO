@@ -1,4 +1,6 @@
 Car
+Pedestrian
+Cyclist
 Truck
 Motorcycle
 SUV

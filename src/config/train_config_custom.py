@@ -36,7 +36,7 @@ def parse_train_configs():
     # ----------Adding these paths for the saved trained model after training---------- Jonathan
     parser.add_argument("--model_def", type=str, default="./config/cfg/complex_yolov4.cfg", metavar="PATH",
                         help="path to model definition file")
-    parser.add_argument('--save_path', type=str, default="../checkpoints/Model_complex_yolo_V4_Practice.pth", metavar='PATH',
+    parser.add_argument('--save_path', type=str, default="../checkpoints/transfer_learning/Model_complex_yolo_V4_Custom.pth", metavar='PATH',
                         help='the path of the save checkpoint')
     # ------------------------------------------------------------------------------- Jonathan
     parser.add_argument('--use_giou_loss', action='store_true',
