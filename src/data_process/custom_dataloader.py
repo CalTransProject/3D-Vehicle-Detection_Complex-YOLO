@@ -107,7 +107,7 @@ if __name__ == '__main__':
 
     import data_process.custom_bev_utils as bev_utils
     from data_process import custom_data_utils
-    from utils.visualization_utils import show_image_with_boxes, merge_rgb_to_bev, invert_target
+    from utils.visualization_utils_custom import show_image_with_boxes, merge_rgb_to_bev, invert_target
     import config.custom_config as cnf
 
     parser = argparse.ArgumentParser(description='Complexer YOLO Implementation')

@@ -52,6 +52,7 @@ def print_cfg(blocks):
     prev_width = 416
     prev_height = 416
     prev_filters = 3
+    # prev_filters = 5 # Testing changes ---01/21/2024 Jonathan C
     out_filters = []
     out_widths = []
     out_heights = []

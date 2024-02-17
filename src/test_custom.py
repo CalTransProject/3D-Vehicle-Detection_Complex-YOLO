@@ -110,8 +110,8 @@ if __name__ == '__main__':
 
     model.eval()
 
-    # start_frame_index = 100  # Set this to your desired starting frame index
-    start_frame_index = 230  # Set this to your desired starting frame index
+    start_frame_index = 100  # Set this to your desired starting frame index
+    # start_frame_index = 230  # Set this to your desired starting frame index
     test_dataloader = create_test_dataloader(configs)
     with torch.no_grad():
         for batch_idx, (img_paths, imgs_bev) in enumerate(test_dataloader):
@@ -136,16 +136,23 @@ if __name__ == '__main__':
                 if detections is None:
                     continue
                 # Rescale boxes to original image
+                # print(detections)
                 detections = rescale_boxes(detections, configs.img_size, img_bev.shape[:2])
                 for x, y, w, l, im, re, *_, cls_pred in detections:
                     yaw = np.arctan2(im, re)
                     # Draw rotated box
+                    # print("x:", x)
+                    # print("y:", y)
+                    # print("w:", w)
+                    # print("l:", l)
+                    # print("yaw:", yaw)
                     custom_bev_utils.drawRotatedBox(img_bev, x, y, w, l, yaw, cnf.colors[int(cls_pred)])
 
             img_rgb = cv2.imread(img_paths[0])
             calib = custom_data_utils.Calibration(img_paths[0].replace(".png", ".txt").replace("image_2", "calib"))
             # objects_pred = predictions_to_kitti_format(img_detections, calib, img_rgb.shape, configs.img_size)
             objects_pred = predictions_to_custom_format(img_detections, calib, img_rgb.shape, configs.img_size)
+            # print(objects_pred)
             img_rgb = show_image_with_boxes(img_rgb, objects_pred, calib, False)
 
             img_bev = cv2.flip(cv2.flip(img_bev, 0), 1)
@@ -178,7 +185,7 @@ if __name__ == '__main__':
             #         break
             import matplotlib.pyplot as plt
             if configs.show_image:
-                plt.figure(figsize=(10,10))  # You can adjust the figure size as needed
+                plt.figure(figsize=(10,10))
                 out_img_rgb = cv2.cvtColor(out_img, cv2.COLOR_BGR2RGB)  # Convert from BGR to RGB
                 plt.imshow(out_img_rgb)
                 plt.axis('off')  # Hide axes

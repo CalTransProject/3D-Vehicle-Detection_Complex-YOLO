@@ -89,18 +89,40 @@ def main_worker(gpu_idx, configs):
     # load weight from a checkpoint
     if configs.pretrained_path is not None:
         assert os.path.isfile(configs.pretrained_path), "=> no checkpoint found at '{}'".format(configs.pretrained_path)
-        # ---------------------------------------------------------------
-        # model.load_state_dict(torch.load(configs.pretrained_path))
-        model.load_state_dict(torch.load(configs.pretrained_path, map_location=torch.device('cpu')))
-        # ---------------------------------------------------------------
-        if logger is not None:
-            logger.info('loaded pretrained model at {}'.format(configs.pretrained_path))
+        # # ---------------------------------------------------------------
+        # # model.load_state_dict(torch.load(configs.pretrained_path))
+        # model.load_state_dict(torch.load(configs.pretrained_path, map_location=torch.device('cpu')))
+        # # ---------------------------------------------------------------
+        # if logger is not None:
+        #     logger.info('loaded pretrained model at {}'.format(configs.pretrained_path))
+        #
+        # # Make a deep copy of the model's state dict
+        # original_state_dict = {name: tensor.clone() for name, tensor in model.state_dict().items()}
+        #
+        # # Save the copied state dict to the specified save path
+        # torch.save(original_state_dict, configs.save_path)
 
-        # Make a deep copy of the model's state dict
-        original_state_dict = {name: tensor.clone() for name, tensor in model.state_dict().items()}
 
-        # Save the copied state dict to the specified save path
-        torch.save(original_state_dict, configs.save_path)
+        # ---------------------------------------------------------------
+        # CHANGE: PARTIALLY LOAD PRETRAINED WEIGHTS TO HANDLE LAYERS MISMATCH
+        # Load the pretrained weights
+        pretrained_dict = torch.load(configs.pretrained_path, map_location=configs.device)
+
+        # Get the current model state dict
+        model_dict = model.state_dict()
+
+        # Filter out weights that don't match in size
+        pretrained_dict = {k: v for k, v in pretrained_dict.items() if
+                           k in model_dict and model_dict[k].size() == v.size()}
+
+        # Update the current model's state dict
+        model_dict.update(pretrained_dict)
+
+        # Load the updated state dict into the model
+        model.load_state_dict(model_dict)
+        # ---------------------------------------------------------------
+
+
         if logger is not None:
             logger.info(f"The copy of the pre-trained model saved at {configs.save_path}")
 
@@ -183,9 +205,15 @@ def main_worker(gpu_idx, configs):
                 tb_writer.add_scalars('Validation', val_metrics_dict, epoch)
 
         # Save checkpoint
-        if configs.is_master_node and ((epoch % configs.checkpoint_freq) == 0):
+        # if configs.is_master_node and ((epoch % configs.checkpoint_freq) == 0):
+        #     model_state_dict, utils_state_dict = get_saved_state(model, optimizer, lr_scheduler, epoch, configs)
+        #     save_checkpoint(configs.checkpoints_dir, configs.saved_fn, model_state_dict, utils_state_dict, epoch)
+
+        # Save checkpoint after every epoch
+        if configs.is_master_node:
             model_state_dict, utils_state_dict = get_saved_state(model, optimizer, lr_scheduler, epoch, configs)
             save_checkpoint(configs.checkpoints_dir, configs.saved_fn, model_state_dict, utils_state_dict, epoch)
+
 
         if not configs.step_lr_in_epoch:
             lr_scheduler.step()
