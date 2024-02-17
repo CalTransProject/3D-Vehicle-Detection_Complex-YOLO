@@ -147,9 +147,18 @@ class Object3d(object):
         # self.level = self.get_obj_level()
         self.level = 1
 
+    # def compute_alpha(self, rotation_y, x):
+    #     '''Compute alpha angle based on rotation_y and object's X position.'''
+    #     alpha = rotation_y + math.atan2(x, self.zctr)  # Assuming self.zctr is the Z coordinate in camera coordinates
+    #     # Normalize alpha to be within [-pi, pi]
+    #     alpha = (alpha + math.pi) % (2 * math.pi) - math.pi
+    #     return alpha
+
     def compute_alpha(self, rotation_y, x):
         '''Compute alpha angle based on rotation_y and object's X position.'''
-        alpha = rotation_y + math.atan2(x, self.zctr)  # Assuming self.zctr is the Z coordinate in camera coordinates
+        theta = math.atan2(x, self.zctr)  # Calculate theta as the angle to the X axis
+        alpha = rotation_y - theta  # Adjusted formula
+
         # Normalize alpha to be within [-pi, pi]
         alpha = (alpha + math.pi) % (2 * math.pi) - math.pi
         return alpha
