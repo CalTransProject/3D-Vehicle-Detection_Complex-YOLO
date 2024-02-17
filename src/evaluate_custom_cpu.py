@@ -159,6 +159,7 @@ def parse_eval_configs():
     parser.add_argument('--iou-thresh', type=float, default=0.5,
                         help='for evaluation - the threshold for IoU')
 
+
     configs = edict(vars(parser.parse_args()))
     configs.pin_memory = True
 
