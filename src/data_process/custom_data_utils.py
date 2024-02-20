@@ -11,66 +11,6 @@ import cv2
 import math
 
 
-# class Object3d(object):
-#     ''' 3d object label '''
-#
-#     def __init__(self, label_file_line):
-#         data = label_file_line.split(' ')
-#         data[1:] = [float(x) for x in data[1:]]
-#
-#         # Print out the data array content
-#         print("Data array content:", data)
-#
-#         # extract label, truncation, occlusion
-#         self.type = data[0]  # 'Car', 'Pedestrian', ...
-#         self.cls_id = self.cls_type_to_id(self.type)
-#         self.truncation = data[1]  # truncated pixel ratio [0..1]
-#         self.occlusion = int(data[2])  # 0=visible, 1=partly occluded, 2=fully occluded, 3=unknown
-#         self.alpha = data[3]  # object observation angle [-pi..pi]
-#
-#         # extract 2d bounding box in 0-based coordinates
-#         self.xmin = data[4]  # left
-#         self.ymin = data[5]  # top
-#         self.xmax = data[6]  # right
-#         self.ymax = data[7]  # bottom
-#         self.box2d = np.array([self.xmin, self.ymin, self.xmax, self.ymax])
-#
-#         # extract 3d bounding box information
-#         self.h = data[8]  # box height
-#         self.w = data[9]  # box width
-#         self.l = data[10]  # box length (in meters)
-#         self.t = (data[11], data[12], data[13])  # location (x,y,z) in camera coord.
-#         self.dis_to_cam = np.linalg.norm(self.t)
-#         self.ry = data[14]  # yaw angle (around Y-axis in camera coordinates) [-pi..pi]
-#         self.score = data[15] if data.__len__() == 16 else -1.0
-#         self.level_str = None
-#         self.level = self.get_obj_level()
-#
-#     def cls_type_to_id(self, cls_type):
-#         # Car and Van ==> Car class
-#         # Pedestrian and Person_Sitting ==> Pedestrian Class
-#         # CLASS_NAME_TO_ID = {
-#         #     'Car': 0,
-#         #     'Truck': 1,
-#         #     'Motorcycle': 2,
-#         #     'SUV': 3,
-#         #     'Semi': 4,
-#         #     'Bus': 5,
-#         #     'Van': 6
-#         # }
-#         CLASS_NAME_TO_ID = {
-#             'Car': 0,
-#             'Pedestrian': 1,
-#             'Cyclist': 2,
-#             'Van': 0,
-#             'Person_sitting': 1
-#         }
-#         if cls_type not in CLASS_NAME_TO_ID.keys():
-#             return -1
-#         return CLASS_NAME_TO_ID[cls_type]
-#
-
-
 class Object3d(object):
     ''' 3d object label '''
 
@@ -81,71 +21,139 @@ class Object3d(object):
         # Print out the data array content
         print("Data array content:", data)
 
-        # Parse the provided data assuming the format is as described
-        # "position": List of the form [xctr, yctr, zctr, xlen, ylen, zlen, xrot, yrot, zrot]
-        self.type = data[0]  # 'Car', 'Motorcycle', ...
+        # extract label, truncation, occlusion
+        self.type = data[0]  # 'Car', 'Pedestrian', ...
         self.cls_id = self.cls_type_to_id(self.type)
         self.truncation = data[1]  # truncated pixel ratio [0..1]
         self.occlusion = int(data[2])  # 0=visible, 1=partly occluded, 2=fully occluded, 3=unknown
-        self.xctr = float(data[3])
-        self.yctr = float(data[4])
-        self.zctr = float(data[5])
-        self.xlen = float(data[6])
-        self.ylen = float(data[7])
-        self.zlen = float(data[8])
-        self.xrot = float(data[9])
-        self.yrot = float(data[10])  # Rotation around Y-axis, considered as ry
-        self.zrot = float(data[11])
+        self.alpha = data[3]  # object observation angle [-pi..pi]
 
-        # Since the angles are provided as rotation along axes, you may need to convert
-        # them to a format your application expects, like a quaternion or a rotation matrix.
-        # Set the attributes as per the defined format
-        self.h = self.ylen  # Height of the bounding box
-        self.w = self.zlen  # Width of the bounding box
-        self.l = self.xlen  # Length of the bounding box
-        self.ry = self.yrot  # Yaw rotation -- updated 02/14/2024
+        # extract 2d bounding box in 0-based coordinates
+        self.xmin = data[4]  # left
+        self.ymin = data[5]  # top
+        self.xmax = data[6]  # right
+        self.ymax = data[7]  # bottom
+        self.box2d = np.array([self.xmin, self.ymin, self.xmax, self.ymax])
 
-        # Other attributes like truncation, occlusion, and alpha are expected to follow.
-        # self.truncation = float(data[10])
-        # self.occlusion = 0 # Default
-        # self.alpha = float(data[12])  # Assuming that 'alpha' is the next field
-        # self.alpha = math.atan2(self.xctr, self.zctr)
-        # self.alpha = (self.alpha + math.pi) % (2 * math.pi) - math.pi  # Normalize to [-pi, pi]
-        # Observation angle, updated to compute based on position
-        # self.alpha = self.compute_alpha(self.xctr, self.zrot) # xctr and zrot
-        self.alpha = self.compute_alpha(self.yrot, self.xctr)  # Use yrot and xctr
+        # extract 3d bounding box information
+        self.h = data[8]  # box height
+        self.w = data[9]  # box width
+        self.l = data[10]  # box length (in meters)
+        self.t = (data[11], data[12], data[13])  # location (x,y,z) in camera coord.
+        self.dis_to_cam = np.linalg.norm(self.t)
+        self.ry = data[14]  # yaw angle (around Y-axis in camera coordinates) [-pi..pi]
+        self.score = data[15] if data.__len__() == 16 else -1.0
+        self.level_str = None
+        self.level = self.get_obj_level()
 
-        # Set the 't' attribute as a tuple of the centroid coordinates
-        self.t = (self.xctr, self.yctr, self.zctr)
+    def cls_type_to_id(self, cls_type):
+        # Car and Van ==> Car class
+        # Pedestrian and Person_Sitting ==> Pedestrian Class
+        CLASS_NAME_TO_ID = {
+            'Car': 0,  # Original class
+            'Pedestrian': 1,  # Original class
+            'Cyclist': 2,  # Original class
+            'Truck': 3,  # New class
+            'Motorcycle': 4,  # New class
+            'SUV': 5,  # New class
+            'Semi': 6,  # New class
+            'Bus': 7,  # New class
+            'Van': 8  # New class
+        }
+        # CLASS_NAME_TO_ID = {
+        #     'Car': 0,
+        #     'Pedestrian': 1,
+        #     'Cyclist': 2,
+        #     'Van': 0,
+        #     'Person_sitting': 1
+        # }
+        if cls_type not in CLASS_NAME_TO_ID.keys():
+            return -1
+        return CLASS_NAME_TO_ID[cls_type]
 
-        # Placeholder values for other attributes, if necessary
-        # self.ry = 0.0  # Placeholder for rotation around the Y-axis
-        # self.score = 0.0  # Placeholder for the score
 
-        # Placeholder for the 2D bounding box coordinates (not provided here)
-        self.xmin = None
-        self.ymin = None
-        self.xmax = None
-        self.ymax = None
 
-        # Placeholder for class ID since it's not provided
-        self.cls_id = self.cls_type_to_id(self.type)
-        # Assuming a method cls_type_to_id exists to map self.type to an ID -- 02/14/2024
-        # self.cls_id = self.cls_type_to_id(self.type) if hasattr(self, 'cls_type_to_id') else None
-
-        # Distance to camera (not provided, but could be calculated if needed)
-        self.dis_to_cam = np.linalg.norm(np.array(self.t))
-
-        self.box2d = None  # If needed, calculate based on the 3D box and camera parameters
-
-        # Placeholder for score, level string, and level which may not be provided
-        # self.score = None
-        self.score = -1.0
-        # self.level_str = None
-        # self.level = None
-        self.level_str = 'Easy'
-        # self.level = self.get_obj_level()
-        self.level = 1
+# class Object3d(object):
+#     ''' 3d object label '''
+#
+#     def __init__(self, label_file_line):
+#         data = label_file_line.split(' ')
+#         data[1:] = [float(x) for x in data[1:]]
+#
+#         # Print out the data array content
+#         print("Data array content:", data)
+#
+#         # Parse the provided data assuming the format is as described
+#         # "position": List of the form [xctr, yctr, zctr, xlen, ylen, zlen, xrot, yrot, zrot]
+#         self.type = data[0]  # 'Car', 'Motorcycle', ...
+#         self.cls_id = self.cls_type_to_id(self.type)
+#         self.truncation = data[1]  # truncated pixel ratio [0..1]
+#         self.occlusion = int(data[2])  # 0=visible, 1=partly occluded, 2=fully occluded, 3=unknown
+#         self.xctr = float(data[3])
+#         self.yctr = float(data[4])
+#         self.zctr = float(data[5])
+#         self.xlen = float(data[6])
+#         self.ylen = float(data[7])
+#         self.zlen = float(data[8])
+#         self.xrot = float(data[9])
+#         self.yrot = float(data[10])  # Rotation around Y-axis, considered as ry
+#         self.zrot = float(data[11])
+#
+#         # Since the angles are provided as rotation along axes, you may need to convert
+#         # them to a format your application expects, like a quaternion or a rotation matrix.
+#         # Set the attributes as per the defined format
+#         self.h = self.ylen  # Height of the bounding box
+#         self.w = self.zlen  # Width of the bounding box
+#         self.l = self.xlen  # Length of the bounding box
+#
+#         # self.ry = self.zrot  # Yaw rotation -- updated Monday, 02/19/2024
+#
+#         # Convert self.zrot from degrees to radians -- updated Monday, 02/19/2024
+#         zrot_radians = np.radians(self.zrot)
+#         # Normalize the yaw rotation to be within [-pi, pi]
+#         self.ry = (zrot_radians + np.pi) % (2 * np.pi) - np.pi
+#
+#         # Other attributes like truncation, occlusion, and alpha are expected to follow.
+#         # self.truncation = float(data[10])
+#         # self.occlusion = 0 # Default
+#         # self.alpha = float(data[12])  # Assuming that 'alpha' is the next field
+#         # self.alpha = math.atan2(self.xctr, self.zctr)
+#         # self.alpha = (self.alpha + math.pi) % (2 * math.pi) - math.pi  # Normalize to [-pi, pi]
+#         # Observation angle, updated to compute based on position
+#         # self.alpha = self.compute_alpha(self.xctr, self.zrot) # xctr and zrot
+#         self.alpha = self.compute_alpha(self.ry, self.xctr, self.zctr)  # Use ry and xctr -- updated Monday, 02/19/2024
+#
+#         # Set the 't' attribute as a tuple of the centroid coordinates
+#         self.t = (self.xctr, self.yctr, self.zctr)
+#
+#         # Placeholder values for other attributes, if necessary
+#         # self.ry = 0.0  # Placeholder for rotation around the Y-axis
+#         # self.score = 0.0  # Placeholder for the score
+#
+#         # Placeholder for the 2D bounding box coordinates (not provided here)
+#         self.xmin = None
+#         self.ymin = None
+#         self.xmax = None
+#         self.ymax = None
+#
+#         # Placeholder for class ID since it's not provided
+#         self.cls_id = self.cls_type_to_id(self.type)
+#         # Assuming a method cls_type_to_id exists to map self.type to an ID -- 02/14/2024
+#         # self.cls_id = self.cls_type_to_id(self.type) if hasattr(self, 'cls_type_to_id') else None
+#
+#         # Distance to camera (not provided, but could be calculated if needed)
+#         self.dis_to_cam = np.linalg.norm(np.array(self.t))
+#
+#         self.box2d = None  # If needed, calculate based on the 3D box and camera parameters
+#
+#         # Placeholder for score, level string, and level which may not be provided
+#         # self.score = None
+#         self.score = -1.0
+#         # self.level_str = None
+#         # self.level = None
+#         self.level_str = 'Easy'
+#         # self.level = self.get_obj_level()
+#         self.level = 1
 
     # def compute_alpha(self, rotation_y, x):
     #     '''Compute alpha angle based on rotation_y and object's X position.'''
@@ -154,14 +162,30 @@ class Object3d(object):
     #     alpha = (alpha + math.pi) % (2 * math.pi) - math.pi
     #     return alpha
 
-    def compute_alpha(self, rotation_y, x):
-        '''Compute alpha angle based on rotation_y and object's X position.'''
-        theta = math.atan2(x, self.zctr)  # Calculate theta as the angle to the X axis
-        alpha = rotation_y - theta  # Adjusted formula
+    # def compute_alpha(self, rotation_y, x):
+    #     '''Compute alpha angle based on rotation_y and object's X position.'''
+    #     theta = math.atan2(x, self.zctr)  # Calculate theta as the angle to the X axis
+    #     alpha = rotation_y - theta  # Adjusted formula
+    #
+    #     # Normalize alpha to be within [-pi, pi]
+    #     alpha = (alpha + math.pi) % (2 * math.pi) - math.pi
+    #     return alpha
+
+    # -- updated Monday, 02 / 19 / 2024
+    def compute_alpha(self, rotation_y_degrees, xctr, zctr):
+        # Convert rotation_y from degrees to radians
+        rotation_y_radians = math.radians(rotation_y_degrees)
+
+        # Calculate theta in radians
+        theta = math.atan2(xctr, zctr)
+
+        # Calculate alpha in radians
+        alpha_radians = rotation_y_radians - theta
 
         # Normalize alpha to be within [-pi, pi]
-        alpha = (alpha + math.pi) % (2 * math.pi) - math.pi
-        return alpha
+        alpha_normalized = (alpha_radians + math.pi) % (2 * math.pi) - math.pi
+
+        return alpha_normalized
 
     def cls_type_to_id(self, cls_type):
         # Implement this method based on your class definitions
