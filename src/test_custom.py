@@ -141,11 +141,11 @@ if __name__ == '__main__':
                 for x, y, w, l, im, re, *_, cls_pred in detections:
                     yaw = np.arctan2(im, re)
                     # Draw rotated box
-                    # print("x:", x)
-                    # print("y:", y)
-                    # print("w:", w)
-                    # print("l:", l)
-                    # print("yaw:", yaw)
+                    print("x:", x)
+                    print("y:", y)
+                    print("w:", w)
+                    print("l:", l)
+                    print("yaw:", yaw)
                     custom_bev_utils.drawRotatedBox(img_bev, x, y, w, l, yaw, cnf.colors[int(cls_pred)])
 
             img_rgb = cv2.imread(img_paths[0])
