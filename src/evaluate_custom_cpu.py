@@ -21,63 +21,14 @@ from utils.evaluation_utils_custom import post_processing, get_batch_statistics_
     load_classes, post_processing_v2
 
 
-# def evaluate_mAP(val_loader, model, configs, logger):
-#     batch_time = AverageMeter('Time', ':6.3f')
-#     data_time = AverageMeter('Data', ':6.3f')
-#
-#     progress = ProgressMeter(len(val_loader), [batch_time, data_time],
-#                              prefix="Evaluation phase...")
-#     labels = []
-#     sample_metrics = []  # List of tuples (TP, confs, pred)
-#     # switch to evaluate mode
-#     model.eval()
-#     with torch.no_grad():
-#         start_time = time.time()
-#         for batch_idx, batch_data in enumerate(tqdm(val_loader)):
-#             data_time.update(time.time() - start_time)
-#             _, imgs, targets = batch_data
-#             # Extract labels
-#             labels += targets[:, 1].tolist()
-#             # Rescale x, y, w, h of targets ((box_idx, class, x, y, w, l, im, re))
-#             targets[:, 2:6] *= configs.img_size
-#             imgs = imgs.to(configs.device, non_blocking=True)
-#
-#             outputs = model(imgs)
-#             outputs = post_processing_v2(outputs, conf_thresh=configs.conf_thresh, nms_thresh=configs.nms_thresh)
-#
-#             sample_metrics += get_batch_statistics_rotated_bbox(outputs, targets, iou_threshold=configs.iou_thresh)
-#
-#             # measure elapsed time
-#             # torch.cuda.synchronize()
-#             batch_time.update(time.time() - start_time)
-#
-#             # Log message
-#             if logger is not None:
-#                 if ((batch_idx + 1) % configs.print_freq) == 0:
-#                     logger.info(progress.get_message(batch_idx))
-#
-#             start_time = time.time()
-#
-#         # Concatenate sample statistics
-#         true_positives, pred_scores, pred_labels = [np.concatenate(x, 0) for x in list(zip(*sample_metrics))]
-#         precision, recall, AP, f1, ap_class = ap_per_class(true_positives, pred_scores, pred_labels, labels)
-#
-#     return precision, recall, AP, f1, ap_class
-
 def evaluate_mAP(val_loader, model, configs, logger):
     batch_time = AverageMeter('Time', ':6.3f')
     data_time = AverageMeter('Data', ':6.3f')
-    # losses = AverageMeter('Loss', ':.4e')
 
     progress = ProgressMeter(len(val_loader), [batch_time, data_time],
                              prefix="Evaluation phase...")
-
-    # progress = ProgressMeter(len(val_loader), [batch_time, data_time, losses],
-    #                          prefix="Evaluation phase...")
-
     labels = []
     sample_metrics = []  # List of tuples (TP, confs, pred)
-    # total_loss = 0.0  # Variable to store total loss
     # switch to evaluate mode
     model.eval()
     with torch.no_grad():
@@ -90,12 +41,8 @@ def evaluate_mAP(val_loader, model, configs, logger):
             # Rescale x, y, w, h of targets ((box_idx, class, x, y, w, l, im, re))
             targets[:, 2:6] *= configs.img_size
             imgs = imgs.to(configs.device, non_blocking=True)
-            # targets = targets.to(configs.device, non_blocking=True) # New add
 
             outputs = model(imgs)
-            # loss = criterion(outputs, targets)  # Compute the loss
-            # total_loss += loss.item()  # Accumulate the loss
-
             outputs = post_processing_v2(outputs, conf_thresh=configs.conf_thresh, nms_thresh=configs.nms_thresh)
 
             sample_metrics += get_batch_statistics_rotated_bbox(outputs, targets, iou_threshold=configs.iou_thresh)
@@ -115,11 +62,64 @@ def evaluate_mAP(val_loader, model, configs, logger):
         true_positives, pred_scores, pred_labels = [np.concatenate(x, 0) for x in list(zip(*sample_metrics))]
         precision, recall, AP, f1, ap_class = ap_per_class(true_positives, pred_scores, pred_labels, labels)
 
-        # average_val_loss = total_loss / len(val_loader)  # Calculate average validation loss
-
-    # return the average validation loss along with the other metrics
-    # return precision, recall, AP, f1, ap_class, average_val_loss
     return precision, recall, AP, f1, ap_class
+
+# def evaluate_mAP(val_loader, model, configs, logger):
+#     batch_time = AverageMeter('Time', ':6.3f')
+#     data_time = AverageMeter('Data', ':6.3f')
+#     # losses = AverageMeter('Loss', ':.4e')
+#
+#     progress = ProgressMeter(len(val_loader), [batch_time, data_time],
+#                              prefix="Evaluation phase...")
+#
+#     # progress = ProgressMeter(len(val_loader), [batch_time, data_time, losses],
+#     #                          prefix="Evaluation phase...")
+#
+#     labels = []
+#     sample_metrics = []  # List of tuples (TP, confs, pred)
+#     # total_loss = 0.0  # Variable to store total loss
+#     # switch to evaluate mode
+#     model.eval()
+#     with torch.no_grad():
+#         start_time = time.time()
+#         for batch_idx, batch_data in enumerate(tqdm(val_loader)):
+#             data_time.update(time.time() - start_time)
+#             _, imgs, targets = batch_data
+#             # Extract labels
+#             labels += targets[:, 1].tolist()
+#             # Rescale x, y, w, h of targets ((box_idx, class, x, y, w, l, im, re))
+#             targets[:, 2:6] *= configs.img_size
+#             imgs = imgs.to(configs.device, non_blocking=True)
+#             # targets = targets.to(configs.device, non_blocking=True) # New add
+#
+#             outputs = model(imgs)
+#             # loss = criterion(outputs, targets)  # Compute the loss
+#             # total_loss += loss.item()  # Accumulate the loss
+#
+#             outputs = post_processing_v2(outputs, conf_thresh=configs.conf_thresh, nms_thresh=configs.nms_thresh)
+#
+#             sample_metrics += get_batch_statistics_rotated_bbox(outputs, targets, iou_threshold=configs.iou_thresh)
+#
+#             # measure elapsed time
+#             # torch.cuda.synchronize()
+#             batch_time.update(time.time() - start_time)
+#
+#             # Log message
+#             if logger is not None:
+#                 if ((batch_idx + 1) % configs.print_freq) == 0:
+#                     logger.info(progress.get_message(batch_idx))
+#
+#             start_time = time.time()
+#
+#         # Concatenate sample statistics
+#         true_positives, pred_scores, pred_labels = [np.concatenate(x, 0) for x in list(zip(*sample_metrics))]
+#         precision, recall, AP, f1, ap_class = ap_per_class(true_positives, pred_scores, pred_labels, labels)
+#
+#         # average_val_loss = total_loss / len(val_loader)  # Calculate average validation loss
+#
+#     # return the average validation loss along with the other metrics
+#     # return precision, recall, AP, f1, ap_class, average_val_loss
+#     return precision, recall, AP, f1, ap_class
 
 
 def parse_eval_configs():
