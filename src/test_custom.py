@@ -146,6 +146,10 @@ if __name__ == '__main__':
                     # print("w:", w)
                     # print("l:", l)
                     # print("yaw:", yaw)
+                    # Output bounding box coordinates and yaw
+                    print(f"Bounding Box Coordinates and Orientation:")
+                    print(f"Class: {cls_pred}, X: {x}, Y: {y}, Width: {w}, Length: {l}, Yaw: {yaw}")
+
                     custom_bev_utils.drawRotatedBox(img_bev, x, y, w, l, yaw, cnf.colors[int(cls_pred)])
 
             img_rgb = cv2.imread(img_paths[0])
