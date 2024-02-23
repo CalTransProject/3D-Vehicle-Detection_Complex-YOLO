@@ -232,6 +232,11 @@ def get_batch_statistics_rotated_bbox(outputs, targets, iou_threshold):
                 if iou >= iou_threshold and box_index not in detected_boxes:
                     true_positives[pred_i] = 1
                     detected_boxes += [box_index]
+
+            # Debugging section: Print target vs. predicted labels
+            # Convert target_labels and pred_labels to lists for more readable output
+            # print(f"Sample {sample_i}: Target Labels: {target_labels.tolist()}, Predicted Labels: {pred_labels.tolist()}")
+
         batch_metrics.append([true_positives, pred_scores, pred_labels])
 
     return batch_metrics
