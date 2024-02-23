@@ -141,11 +141,14 @@ if __name__ == '__main__':
                 for x, y, w, l, im, re, *_, cls_pred in detections:
                     yaw = np.arctan2(im, re)
                     # Draw rotated box
-                    print("x:", x)
-                    print("y:", y)
-                    print("w:", w)
-                    print("l:", l)
-                    print("yaw:", yaw)
+                    # print("x:", x)
+                    # print("y:", y)
+                    # print("w:", w)
+                    # print("l:", l)
+                    # print("yaw:", yaw)
+                    # Output bounding box coordinates and yaw
+                    print(f"Bounding Box Coordinates and Orientation:")
+                    print(f"Class: {cls_pred}, X: {x}, Y: {y}, Width: {w}, Length: {l}, Yaw: {yaw}")
                     custom_bev_utils.drawRotatedBox(img_bev, x, y, w, l, yaw, cnf.colors[int(cls_pred)])
 
             img_rgb = cv2.imread(img_paths[0])
@@ -184,11 +187,41 @@ if __name__ == '__main__':
             #     if cv2.waitKey(0) & 0xFF == 27:
             #         break
             import matplotlib.pyplot as plt
+            # if configs.show_image:
+            #     plt.figure(figsize=(10,10))
+            #     out_img_rgb = cv2.cvtColor(out_img, cv2.COLOR_BGR2RGB)  # Convert from BGR to RGB
+            #     plt.imshow(out_img_rgb)
+            #     # plt.axis('off')  # Hide axes
+            #     # Adding grid, labels, and title for better spatial understanding
+            #     # Debugging -----------------------
+            #     plt.grid(which='both', color='gray', linestyle='--', linewidth=0.5)
+            #     plt.minorticks_on()
+            #     plt.xlabel('X axis')
+            #     plt.ylabel('Y axis')
+            #     plt.title('BEV Image with Bounding Boxes')
+            #     # Debugging -----------------------
+            #     plt.show()
+            #     print('\n[INFO] Close the image window to see the next sample...\n')
+
             if configs.show_image:
-                plt.figure(figsize=(10,10))
-                out_img_rgb = cv2.cvtColor(out_img, cv2.COLOR_BGR2RGB)  # Convert from BGR to RGB
-                plt.imshow(out_img_rgb)
-                plt.axis('off')  # Hide axes
+                plt.figure(figsize=(10, 10))
+                img_bev_rgb = cv2.cvtColor(img_bev, cv2.COLOR_BGR2RGB)  # Convert BEV image from BGR to RGB
+                plt.imshow(img_bev_rgb)
+                # plt.imshow(img_bev_rgb, origin='lower')
+                plt.grid(which='both', color='gray', linestyle='--', linewidth=0.5)
+                plt.minorticks_on()
+                plt.xlabel('X axis')
+                plt.ylabel('Y axis')
+                plt.title('BEV Image with Bounding Boxes')
+
+                # Move the X-axis to the top
+                #ax = plt.gca()  # Get the current Axes instance on the current figure matching the given keyword args, or create one.
+                #ax.xaxis.tick_top()
+                #ax.xaxis.set_label_position('top')  # Move the x-axis label to the top
+
+                # ax = plt.gca()  # Get the current Axes instance on the current figure
+                # ax.invert_yaxis()  # Invert the Y-axis to start from 0 at the bottom withou
+
                 plt.show()
                 print('\n[INFO] Close the image window to see the next sample...\n')
 
