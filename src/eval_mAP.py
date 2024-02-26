@@ -8,7 +8,7 @@ os.environ['KMP_DUPLICATE_LIB_OK']='True'
 
 import numpy as np
 import torch
-from data_process.kitti_dataloader import create_val_dataloader
+from data_process.custom_dataloader import create_val_dataloader
 import torch.utils.data.distributed
 import tqdm
 
@@ -60,7 +60,7 @@ def main():
     parser.add_argument("--pretrained_path", type=str, default="checkpoints/Complex_yolo_yolo_v4.pth", metavar="PATH", help="path to weights file")
     parser.add_argument("--save_path", type=str, default="checkpoints/Complex_yolo_yolo_v4.pth", metavar="PATH", help="path to weights file")
     
-    parser.add_argument("--class_path", type=str, default="dataset/kitti/classes_names.txt", metavar="PATH", help="path to class label file")
+    parser.add_argument("--class_path", type=str, default="dataset/custom/classes_names.txt", metavar="PATH", help="path to class label file")
     parser.add_argument("--batch_size"  , type=int  , default=4, help="size of each image batch")
     parser.add_argument("--iou_thres"   , type=float, default=0.5, help="iou threshold required to qualify as detected")
     parser.add_argument("--conf_thres", type=float, default=0.5, help="object confidence threshold")
@@ -76,7 +76,7 @@ def main():
     
     configs.pin_memory = True
 
-    configs.dataset_dir = os.path.join("dataset", "kitti")
+    configs.dataset_dir = os.path.join("dataset", "custom")
     
     configs.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     # Initiate model

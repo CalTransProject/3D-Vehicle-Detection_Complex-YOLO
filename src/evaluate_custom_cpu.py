@@ -15,7 +15,8 @@ from easydict import EasyDict as edict
 sys.path.append('./')
 
 from data_process.custom_dataloader import create_val_dataloader
-from models.model_utils import create_model
+# from models.model_utils import create_model
+from models.model_utils_custom_cpu import create_model # ----02/24/2024 by Jonathan C
 from utils.misc import AverageMeter, ProgressMeter
 from utils.evaluation_utils_custom import post_processing, get_batch_statistics_rotated_bbox, ap_per_class, \
     load_classes, post_processing_v2

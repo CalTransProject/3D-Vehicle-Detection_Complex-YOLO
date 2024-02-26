@@ -57,6 +57,7 @@ class CustomDataset(Dataset):
             self.sample_id_list = [int(sample_id) for sample_id in self.image_idx_list]
         else:
             self.sample_id_list = self.remove_invalid_idx(self.image_idx_list)
+        # self.sample_id_list = [int(sample_id) for sample_id in self.image_idx_list]
 
         if num_samples is not None:
             self.sample_id_list = self.sample_id_list[:num_samples]

@@ -133,6 +133,8 @@ if __name__ == '__main__':
                 detections = rescale_boxes(detections, configs.img_size, img_bev.shape[:2])
                 for x, y, w, l, im, re, *_, cls_pred in detections:
                     yaw = np.arctan2(im, re)
+                    print(f"Bounding Box Coordinates and Orientation:")
+                    print(f"Class: {cls_pred}, X: {x}, Y: {y}, Width: {w}, Length: {l}, Yaw: {yaw}")
                     # Draw rotated box
                     practice_bev_utils.drawRotatedBox(img_bev, x, y, w, l, yaw, cnf.colors[int(cls_pred)])
 
