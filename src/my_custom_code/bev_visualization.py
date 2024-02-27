@@ -57,6 +57,7 @@ class Object3D(object):
     #     alpha = (alpha + math.pi) % (2 * math.pi) - math.pi
     #     return alpha
 
+
     def compute_alpha(self, rotation_y_degrees, x):
         """Compute alpha angle based on rotation_y in degrees and object's X position."""
         # Convert rotation_y from degrees to radians

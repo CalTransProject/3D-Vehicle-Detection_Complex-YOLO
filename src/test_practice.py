@@ -110,10 +110,15 @@ if __name__ == '__main__':
 
     model.eval()
 
-
+    # start_frame_index = 100  # Set this to your desired starting frame index
     test_dataloader = create_test_dataloader(configs)
     with torch.no_grad():
         for batch_idx, (img_paths, imgs_bev) in enumerate(test_dataloader):
+
+            # Skip frames until you reach the starting index
+            # if batch_idx < start_frame_index:
+                # continue
+
             input_imgs = imgs_bev.to(device=configs.device).float()
             t1 = time_synchronized()
             outputs = model(input_imgs)

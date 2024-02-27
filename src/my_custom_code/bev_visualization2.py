@@ -2,9 +2,9 @@ import numpy as np
 import cv2
 import os
 
-
 import numpy as np
 import math
+
 
 class Object3D(object):
     '''3d object label'''
@@ -28,29 +28,48 @@ class Object3D(object):
         self.ymin = data[5]  # top
         self.xmax = data[6]  # right
         self.ymax = data[7]  # bottom
-        #self.xmin = 1000  # left
-        #self.ymin = 1000  # top
-        #self.xmax = 1000  # right
-        #self.ymax = 1000  # bottom
+        # self.xmin = 1000  # left
+        # self.ymin = 1000  # top
+        # self.xmax = 1000  # right
+        # self.ymax = 1000  # bottom
         self.box2d = np.array([self.xmin, self.ymin, self.xmax, self.ymax])
 
         # extract 3d bounding box information
         # self.h = data[8]  # box height
         # self.w = data[9]  # box width
         # self.l = data[10]  # box length (in meters)
-        self.xctr = float(data[8])  # Object's center x
-        self.yctr = float(data[9])  # Object's center y
-        self.zctr = float(data[10])  # Object's center z
+        self.xctr = float(data[11])  # Object's center x
+        self.yctr = float(data[12])  # Object's center y
+        self.zctr = float(data[13])  # Object's center z
         self.h = data[10]  # box height
-        self.w = data[8]  # box width
-        self.l = data[9]  # box length (in meters)
+        self.w = data[9]  # box width
+        self.l = data[8]  # box length (in meters)
         self.t = (data[11], data[12], data[13])  # location (x,y,z) in camera coord.
         self.dis_to_cam = np.linalg.norm(self.t)
+        # temp = 28.9113
+        # print("before reverse normalized: ", temp)
+        # self.ry = temp
+        # print("after reverse normalized: ", self.ry)
         self.ry = data[14]  # yaw angle (around Y-axis in camera coordinates) [-pi..pi]
         self.score = data[15] if data.__len__() == 16 else -1.0
         self.level_str = None
         self.level = self.get_obj_level()
 
+    def reverse_normalization_radians(self, value):
+        # Reverse the normalization process (it's already in radians)
+        r_y_unnormalized = (value + np.pi) % (2 * np.pi) - np.pi
+        return r_y_unnormalized
+
+    def reverse_normalization_degrees(self, value):
+        # Convert value from degrees to radians
+        value_radians = np.radians(value)
+
+        # Unnormalize z_rot to be within [-pi, pi]
+        z_rot_radians = (value_radians + np.pi) % (2 * np.pi) - np.pi
+
+        # Extract unnormalized z_rot_radians for further use (if needed)
+        r_y_unnormalized = z_rot_radians
+        return np.degrees(r_y_unnormalized)
 
     def cls_type_to_id(self, cls_type):
         '''Map class type to an ID.'''
@@ -73,7 +92,6 @@ class Object3D(object):
         }
         return CLASS_NAME_TO_ID.get(cls_type, -1)
 
-
     def get_obj_level(self):
         height = float(self.box2d[3]) - float(self.box2d[1]) + 1
 
@@ -89,7 +107,6 @@ class Object3D(object):
         else:
             self.level_str = 'UnKnown'
             return 4
-
 
 
 def load_labels(label_filename):
@@ -179,6 +196,7 @@ def add_labels_to_bev(bev_image, labels, boundary, discretization=(0.1, 0.1)):
 
     return bev_image
 
+
 def get_corners(x, y, width, length, yaw):
     """
     Calculate the corners of a given box in BEV space.
@@ -208,6 +226,7 @@ def get_corners(x, y, width, length, yaw):
 
     return corners
 
+
 def drawRotatedBox(img, x, y, width, length, yaw, color=(0, 255, 0), thickness=2):
     """
     Draw a rotated box on the BEV image.
@@ -229,18 +248,22 @@ def drawRotatedBox(img, x, y, width, length, yaw, color=(0, 255, 0), thickness=2
 
     return img
 
+
 def main():
     dataset_dir = "../../dataset/custom/training"
     # dataset_dir = "../../dataset/kitti/training"
     sample_id = "000100"
     lidar_file = os.path.join(dataset_dir, "velodyne", f"{sample_id}.bin")
-    label_file = os.path.join(dataset_dir, "label_2", f"{sample_id}.txt")
+    # label_file = os.path.join(dataset_dir, "label_2", f"{sample_id}.txt")
+    label_file = os.path.join(dataset_dir, "label_2_testing", f"{sample_id}.txt")
 
     # Load LiDAR data
     lidar_data = load_velo_scan(lidar_file)
 
     # Define the boundary for the BEV image (in meters)
-    boundary = {'minX': -10, 'maxX': 30, 'minY': -10, 'maxY': 10, 'minZ': -2, 'maxZ': 2}
+    # boundary = {'minX': -10, 'maxX': 30, 'minY': -10, 'maxY': 10, 'minZ': -2, 'maxZ': 2}
+    # Adjust the boundary as needed
+    boundary = {'minX': -20, 'maxX': 40, 'minY': -20, 'maxY': 20, 'minZ': -2, 'maxZ': 2}
 
     # Create BEV image
     bev_image = create_bev_image(lidar_data, boundary)
@@ -273,6 +296,7 @@ def main():
     cv2.imshow("BEV Image with Labels", bev_image_with_labels)
     cv2.waitKey(0)
     cv2.destroyAllWindows()
+
 
 if __name__ == "__main__":
     main()
