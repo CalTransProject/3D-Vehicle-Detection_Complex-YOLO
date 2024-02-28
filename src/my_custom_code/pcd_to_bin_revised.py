@@ -2,6 +2,7 @@ import numpy as np
 import struct
 import os
 
+
 def read_pcd_file(pcdFileName):
     with open(pcdFileName, 'r') as f:
         # Skip the header lines
@@ -26,6 +27,7 @@ def read_pcd_file(pcdFileName):
 
     return np.array(points)
 
+
 def pcd_to_bin(points):
     list_bin = []
     for point in points:
@@ -36,6 +38,7 @@ def pcd_to_bin(points):
         list_bin += struct.pack("ffff", x, y, z, intensity_normalized)
 
     return list_bin
+
 
 def main(pcd_folder, bin_folder):
     print("PCD Folder:", pcd_folder)
