@@ -118,6 +118,35 @@ def get_corners(x, y, w, l, yaw):
 
     return bev_corners
 
+# def get_corners(x, y, width, length, yaw):
+#     """
+#     Calculate the corners of a given box in BEV space.
+#
+#     Parameters:
+#     - x, y: Center coordinates of the box
+#     - width, length: Size of the box
+#     - yaw: Rotation angle of the box in radians
+#
+#     Returns:
+#     - corners: Coordinates of the box corners
+#     """
+#     # Calculate rotation matrix
+#     rotation_matrix = np.array([
+#         [np.cos(yaw), -np.sin(yaw)],
+#         [np.sin(yaw), np.cos(yaw)]
+#     ])
+#
+#     # Define corners in local box coordinates
+#     local_corners = np.array([
+#         [length / 2, width / 2], [length / 2, -width / 2],
+#         [-length / 2, -width / 2], [-length / 2, width / 2]
+#     ])
+#
+#     # Rotate and translate corners
+#     corners = np.dot(local_corners, rotation_matrix.T) + np.array([x, y])
+#
+#     return corners
+
 
 def build_yolo_target(labels):
     bc = cnf.boundary
@@ -127,6 +156,7 @@ def build_yolo_target(labels):
         # ped and cyc labels are very small, so lets add some factor to height/width
         l = l + 0.3
         w = w + 0.3
+        # yaw = np.deg2rad(yaw) # 03/14/2024 Jonathan Cordova
         yaw = np.pi * 2 - yaw
         if (bc["minX"] < x < bc["maxX"]) and (bc["minY"] < y < bc["maxY"]):
             y1 = (y - bc["minY"]) / (bc["maxY"] - bc["minY"])  # we should put this in [0,1], so divide max_size  80 m

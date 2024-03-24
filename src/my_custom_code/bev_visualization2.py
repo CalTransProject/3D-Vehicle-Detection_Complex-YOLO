@@ -42,9 +42,13 @@ class Object3D(object):
         self.yctr = float(data[12])  # Object's center y
         self.zctr = float(data[13])  # Object's center z
         self.h = data[10]  # box height
-        self.w = data[9]  # box width
-        self.l = data[8]  # box length (in meters)
-        self.t = (data[11], data[12], data[13])  # location (x,y,z) in camera coord.
+        self.w = data[8]  # box width
+        self.l = data[9]  # box length (in meters)
+        # self.h = data[8]  # box height
+        # self.w = data[9]  # box width
+        # self.l = data[10]  # box length (in meters)
+        self.t = (self.xctr, self.yctr, self.zctr)  # location (x,y,z) in camera coord.
+        # self.t = (data[11], data[12], data[13])  # location (x,y,z) in camera coord.
         self.dis_to_cam = np.linalg.norm(self.t)
         # temp = 28.9113
         # print("before reverse normalized: ", temp)
@@ -55,21 +59,21 @@ class Object3D(object):
         self.level_str = None
         self.level = self.get_obj_level()
 
-    def reverse_normalization_radians(self, value):
-        # Reverse the normalization process (it's already in radians)
-        r_y_unnormalized = (value + np.pi) % (2 * np.pi) - np.pi
-        return r_y_unnormalized
-
-    def reverse_normalization_degrees(self, value):
-        # Convert value from degrees to radians
-        value_radians = np.radians(value)
-
-        # Unnormalize z_rot to be within [-pi, pi]
-        z_rot_radians = (value_radians + np.pi) % (2 * np.pi) - np.pi
-
-        # Extract unnormalized z_rot_radians for further use (if needed)
-        r_y_unnormalized = z_rot_radians
-        return np.degrees(r_y_unnormalized)
+    # def reverse_normalization_radians(self, value):
+    #     # Reverse the normalization process (it's already in radians)
+    #     r_y_unnormalized = (value + np.pi) % (2 * np.pi) - np.pi
+    #     return r_y_unnormalized
+    #
+    # def reverse_normalization_degrees(self, value):
+    #     # Convert value from degrees to radians
+    #     value_radians = np.radians(value)
+    #
+    #     # Unnormalize z_rot to be within [-pi, pi]
+    #     z_rot_radians = (value_radians + np.pi) % (2 * np.pi) - np.pi
+    #
+    #     # Extract unnormalized z_rot_radians for further use (if needed)
+    #     r_y_unnormalized = z_rot_radians
+    #     return np.degrees(r_y_unnormalized)
 
     def cls_type_to_id(self, cls_type):
         '''Map class type to an ID.'''
@@ -197,34 +201,56 @@ def add_labels_to_bev(bev_image, labels, boundary, discretization=(0.1, 0.1)):
     return bev_image
 
 
-def get_corners(x, y, width, length, yaw):
-    """
-    Calculate the corners of a given box in BEV space.
+# def get_corners(x, y, width, length, yaw):
+#     """
+#     Calculate the corners of a given box in BEV space.
+#
+#     Parameters:
+#     - x, y: Center coordinates of the box
+#     - width, length: Size of the box
+#     - yaw: Rotation angle of the box in radians
+#
+#     Returns:
+#     - corners: Coordinates of the box corners
+#     """
+#     # Calculate rotation matrix
+#     rotation_matrix = np.array([
+#         [np.cos(yaw), -np.sin(yaw)],
+#         [np.sin(yaw), np.cos(yaw)]
+#     ])
+#
+#     # Define corners in local box coordinates
+#     local_corners = np.array([
+#         [length / 2, width / 2], [length / 2, -width / 2],
+#         [-length / 2, -width / 2], [-length / 2, width / 2]
+#     ])
+#
+#     # Rotate and translate corners
+#     corners = np.dot(local_corners, rotation_matrix.T) + np.array([x, y])
+#
+#     return corners
 
-    Parameters:
-    - x, y: Center coordinates of the box
-    - width, length: Size of the box
-    - yaw: Rotation angle of the box in radians
+def get_corners(x, y, w, l, yaw):
+    bev_corners = np.zeros((4, 2), dtype=np.float32)
+    cos_yaw = np.cos(yaw)
+    sin_yaw = np.sin(yaw)
+    # front left
+    bev_corners[0, 0] = x - w / 2 * cos_yaw - l / 2 * sin_yaw
+    bev_corners[0, 1] = y - w / 2 * sin_yaw + l / 2 * cos_yaw
 
-    Returns:
-    - corners: Coordinates of the box corners
-    """
-    # Calculate rotation matrix
-    rotation_matrix = np.array([
-        [np.cos(yaw), -np.sin(yaw)],
-        [np.sin(yaw), np.cos(yaw)]
-    ])
+    # rear left
+    bev_corners[1, 0] = x - w / 2 * cos_yaw + l / 2 * sin_yaw
+    bev_corners[1, 1] = y - w / 2 * sin_yaw - l / 2 * cos_yaw
 
-    # Define corners in local box coordinates
-    local_corners = np.array([
-        [length / 2, width / 2], [length / 2, -width / 2],
-        [-length / 2, -width / 2], [-length / 2, width / 2]
-    ])
+    # rear right
+    bev_corners[2, 0] = x + w / 2 * cos_yaw + l / 2 * sin_yaw
+    bev_corners[2, 1] = y + w / 2 * sin_yaw - l / 2 * cos_yaw
 
-    # Rotate and translate corners
-    corners = np.dot(local_corners, rotation_matrix.T) + np.array([x, y])
+    # front right
+    bev_corners[3, 0] = x + w / 2 * cos_yaw - l / 2 * sin_yaw
+    bev_corners[3, 1] = y + w / 2 * sin_yaw + l / 2 * cos_yaw
 
-    return corners
+    return bev_corners
 
 
 def drawRotatedBox(img, x, y, width, length, yaw, color=(0, 255, 0), thickness=2):

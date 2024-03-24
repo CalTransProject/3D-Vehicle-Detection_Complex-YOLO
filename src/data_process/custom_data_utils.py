@@ -29,24 +29,26 @@ class Object3d(object):
         self.alpha = data[3]  # object observation angle [-pi..pi]
 
         # extract 2d bounding box in 0-based coordinates
-        # self.xmin = data[4]  # left
-        # self.ymin = data[5]  # top
-        # self.xmax = data[6]  # right
-        # self.ymax = data[7]  # bottom
-        self.xmin = 1000  # left
-        self.ymin = 1000  # top
-        self.xmax = 1000  # right
-        self.ymax = 1000  # bottom
+        self.xmin = data[4]  # left
+        self.ymin = data[5]  # top
+        self.xmax = data[6]  # right
+        self.ymax = data[7]  # bottom
         self.box2d = np.array([self.xmin, self.ymin, self.xmax, self.ymax])
 
         # extract 3d bounding box information
-        # self.h = data[8]  # box height
-        # self.w = data[9]  # box width
-        # self.l = data[10]  # box length (in meters)
         self.h = data[10]  # box height
         self.w = data[8]  # box width
         self.l = data[9]  # box length (in meters)
-        self.t = (data[11], data[12], data[13])  # location (x,y,z) in camera coord.
+        # self.h = data[8]  # box height
+        # self.w = data[9]  # box width
+        # self.l = data[10]  # box length (in meters)
+        # -----------------------------------------------
+        # kitti data the x in matlab is z, y is x, and z is y.
+        # So, in custom dataset, we switch them
+        # -----------------------------------------------
+        # self.t = (data[12], data[13], data[11])  # location (x,y,z) in camera coord. # before 03/22/2024 Jonathan C.
+        # self.t = (data[13], data[11], data[12]) # This is currently not working for some reason!
+        self.t = (data[13], data[12], data[11])
         self.dis_to_cam = np.linalg.norm(self.t)
         self.ry = data[14]  # yaw angle (around Y-axis in camera coordinates) [-pi..pi]
         self.score = data[15] if data.__len__() == 16 else -1.0
@@ -179,57 +181,57 @@ class Object3d(object):
     #     return alpha
 
     # -- updated Monday, 02 / 19 / 2024
-    def compute_alpha(self, rotation_y_degrees, xctr, zctr):
-        # Convert rotation_y from degrees to radians
-        rotation_y_radians = math.radians(rotation_y_degrees)
+    # def compute_alpha(self, rotation_y_degrees, xctr, zctr):
+    #     # Convert rotation_y from degrees to radians
+    #     rotation_y_radians = math.radians(rotation_y_degrees)
+    #
+    #     # Calculate theta in radians
+    #     theta = math.atan2(xctr, zctr)
+    #
+    #     # Calculate alpha in radians
+    #     alpha_radians = rotation_y_radians - theta
+    #
+    #     # Normalize alpha to be within [-pi, pi]
+    #     alpha_normalized = (alpha_radians + math.pi) % (2 * math.pi) - math.pi
+    #
+    #     return alpha_normalized
 
-        # Calculate theta in radians
-        theta = math.atan2(xctr, zctr)
-
-        # Calculate alpha in radians
-        alpha_radians = rotation_y_radians - theta
-
-        # Normalize alpha to be within [-pi, pi]
-        alpha_normalized = (alpha_radians + math.pi) % (2 * math.pi) - math.pi
-
-        return alpha_normalized
-
-    def cls_type_to_id(self, cls_type):
-        # Implement this method based on your class definitions
-        # Return an integer ID for the object type
-        # CLASS_NAME_TO_ID = {
-        #     'Car': 0,
-        #     'Pedestrian': 1,
-        #     'Cyclist': 2,
-        #     'Van': 0,
-        #     'Person_sitting': 1
-        # }
-
-        # CLASS_NAME_TO_ID = {
-        #     'Car': 0,
-        #     'Pedestrian': 1,
-        #     'Cyclist': 2,
-        #     'Van': 0,
-        #     'Person_sitting': 1,
-        #     'Truck': 0,
-        #     'Motorcycle': 2,
-        #     'SUV': 0,
-        #     'Semi': 0,
-        #     'Bus': 0,
-        # }
-        CLASS_NAME_TO_ID = {
-            'Car': 0,  # Original class
-            'Pedestrian': 1,  # Original class
-            'Cyclist': 2,  # Original class
-            'Truck': 3,  # New class
-            'Motorcycle': 4,  # New class
-            'SUV': 5,  # New class
-            'Semi': 6,  # New class
-            'Bus': 7,  # New class
-            'Van': 8  # New class
-        }
-
-        return CLASS_NAME_TO_ID.get(cls_type, -1)
+    # def cls_type_to_id(self, cls_type):
+    #     # Implement this method based on your class definitions
+    #     # Return an integer ID for the object type
+    #     # CLASS_NAME_TO_ID = {
+    #     #     'Car': 0,
+    #     #     'Pedestrian': 1,
+    #     #     'Cyclist': 2,
+    #     #     'Van': 0,
+    #     #     'Person_sitting': 1
+    #     # }
+    #
+    #     # CLASS_NAME_TO_ID = {
+    #     #     'Car': 0,
+    #     #     'Pedestrian': 1,
+    #     #     'Cyclist': 2,
+    #     #     'Van': 0,
+    #     #     'Person_sitting': 1,
+    #     #     'Truck': 0,
+    #     #     'Motorcycle': 2,
+    #     #     'SUV': 0,
+    #     #     'Semi': 0,
+    #     #     'Bus': 0,
+    #     # }
+    #     CLASS_NAME_TO_ID = {
+    #         'Car': 0,  # Original class
+    #         'Pedestrian': 1,  # Original class
+    #         'Cyclist': 2,  # Original class
+    #         'Truck': 3,  # New class
+    #         'Motorcycle': 4,  # New class
+    #         'SUV': 5,  # New class
+    #         'Semi': 6,  # New class
+    #         'Bus': 7,  # New class
+    #         'Van': 8  # New class
+    #     }
+    #
+    #     return CLASS_NAME_TO_ID.get(cls_type, -1)
 
     def get_obj_level(self):
         height = float(self.box2d[3]) - float(self.box2d[1]) + 1

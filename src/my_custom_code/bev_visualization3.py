@@ -41,9 +41,15 @@ class Object3D(object):
         self.xctr = float(data[13])  # Object's center x
         self.yctr = float(data[11])  # Object's center y
         self.zctr = float(data[12])  # Object's center z
+        # self.xctr = float(data[11])  # Object's center x - Won't work
+        # self.yctr = float(data[12])  # Object's center y - Won't work
+        # self.zctr = float(data[13])  # Object's center z - Won't work
         self.h = data[8]  # box height
         self.w = data[9]  # box width
         self.l = data[10]  # box length (in meters)
+        # -----------------------------------------------
+        # kitti data the x in matlab is z, y is x, and z is y.
+        # -----------------------------------------------
         self.t = (data[13], data[11], data[12])  # location (x,y,z) in camera coord.
         self.dis_to_cam = np.linalg.norm(self.t)
         # temp = 28.9113
@@ -55,21 +61,21 @@ class Object3D(object):
         self.level_str = None
         self.level = self.get_obj_level()
 
-    def reverse_normalization_radians(self, value):
-        # Reverse the normalization process (it's already in radians)
-        r_y_unnormalized = (value + np.pi) % (2 * np.pi) - np.pi
-        return r_y_unnormalized
-
-    def reverse_normalization_degrees(self, value):
-        # Convert value from degrees to radians
-        value_radians = np.radians(value)
-
-        # Unnormalize z_rot to be within [-pi, pi]
-        z_rot_radians = (value_radians + np.pi) % (2 * np.pi) - np.pi
-
-        # Extract unnormalized z_rot_radians for further use (if needed)
-        r_y_unnormalized = z_rot_radians
-        return np.degrees(r_y_unnormalized)
+    # def reverse_normalization_radians(self, value):
+    #     # Reverse the normalization process (it's already in radians)
+    #     r_y_unnormalized = (value + np.pi) % (2 * np.pi) - np.pi
+    #     return r_y_unnormalized
+    #
+    # def reverse_normalization_degrees(self, value):
+    #     # Convert value from degrees to radians
+    #     value_radians = np.radians(value)
+    #
+    #     # Unnormalize z_rot to be within [-pi, pi]
+    #     z_rot_radians = (value_radians + np.pi) % (2 * np.pi) - np.pi
+    #
+    #     # Extract unnormalized z_rot_radians for further use (if needed)
+    #     r_y_unnormalized = z_rot_radians
+    #     return np.degrees(r_y_unnormalized)
 
     def cls_type_to_id(self, cls_type):
         '''Map class type to an ID.'''
@@ -109,26 +115,26 @@ class Object3D(object):
             self.level_str = 'UnKnown'
             return 4
 
-    def inverse_yolo_target(self, bc):
-        # Reverse normalization for each target object
-        labels = []
-        for obj in self:
-            c, y, x, w, l, im, re = obj
-            z, h = -1.55, 1.5
-            if c == 1:
-                h = 1.8
-            elif c == 2:
-                h = 1.4
-
-            y = y * (bc["maxY"] - bc["minY"]) + bc["minY"]
-            x = x * (bc["maxX"] - bc["minX"]) + bc["minX"]
-            w = w * (bc["maxY"] - bc["minY"])
-            l = l * (bc["maxX"] - bc["minX"])
-            w -= 0.3
-            l -= 0.3
-            labels.append([c, x, y, z, h, w, l, - np.arctan2(im, re) - 2 * np.pi])
-
-        return np.array(labels, dtype=np.float32)
+    # def inverse_yolo_target(self, bc):
+    #     # Reverse normalization for each target object
+    #     labels = []
+    #     for obj in self:
+    #         c, y, x, w, l, im, re = obj
+    #         z, h = -1.55, 1.5
+    #         if c == 1:
+    #             h = 1.8
+    #         elif c == 2:
+    #             h = 1.4
+    #
+    #         y = y * (bc["maxY"] - bc["minY"]) + bc["minY"]
+    #         x = x * (bc["maxX"] - bc["minX"]) + bc["minX"]
+    #         w = w * (bc["maxY"] - bc["minY"])
+    #         l = l * (bc["maxX"] - bc["minX"])
+    #         w -= 0.3
+    #         l -= 0.3
+    #         labels.append([c, x, y, z, h, w, l, - np.arctan2(im, re) - 2 * np.pi])
+    #
+    #     return np.array(labels, dtype=np.float32)
 
 
 def load_labels(label_filename):
