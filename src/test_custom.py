@@ -25,7 +25,8 @@ from data_process import custom_data_utils, custom_bev_utils
 from data_process.custom_dataloader import create_test_dataloader
 from models.model_utils import create_model
 from utils.misc import make_folder
-from utils.evaluation_utils import post_processing, rescale_boxes, post_processing_v2
+# from utils.evaluation_utils import post_processing, rescale_boxes, post_processing_v2
+from utils.evaluation_utils_custom import post_processing, rescale_boxes, post_processing_v2
 from utils.misc import time_synchronized
 # from utils.visualization_utils import show_image_with_boxes, merge_rgb_to_bev, predictions_to_kitti_format
 from utils.visualization_utils_custom import show_image_with_boxes, merge_rgb_to_bev, predictions_to_custom_format
@@ -95,11 +96,10 @@ if __name__ == '__main__':
     model = create_model(configs)
     model.print_network()
     print('\n\n' + '-*=' * 30 + '\n\n')
-    
-    #device_string = 'cpu' if configs.no_cuda else 'cuda:{}'.format(configs.gpu_idx)
+
+    # device_string = 'cpu' if configs.no_cuda else 'cuda:{}'.format(configs.gpu_idx)
     device_string = 'cpu'  # Force the code to run on CPU
 
-    
     assert os.path.isfile(configs.pretrained_path), "No file at {}".format(configs.pretrained_path)
     model.load_state_dict(torch.load(configs.pretrained_path, map_location=device_string))
 
@@ -124,6 +124,10 @@ if __name__ == '__main__':
             t1 = time_synchronized()
             outputs = model(input_imgs)
             t2 = time_synchronized()
+
+            # Print the nms_thresh value for the current iteration
+            print(f"Iteration {batch_idx}: nms_thresh = {configs.nms_thresh}")
+
             detections = post_processing_v2(outputs, conf_thresh=configs.conf_thresh, nms_thresh=configs.nms_thresh)
 
             img_detections = []  # Stores detections for each image index
@@ -140,6 +144,12 @@ if __name__ == '__main__':
                 detections = rescale_boxes(detections, configs.img_size, img_bev.shape[:2])
                 for x, y, w, l, im, re, *_, cls_pred in detections:
                     yaw = np.arctan2(im, re)
+
+                    # yaw = np.arctan2(im, re) + np.pi / 2 # -- Jonathan C. 03/24/2024
+                    # yaw = np.deg2rad(yaw) # -- Jonathan C. 03/24/2024
+                    # yaw = np.rad2deg(yaw)  # -- Jonathan C. 03/24/2024 back to degrees!
+                    # yaw = -yaw  # -- Jonathan C. 03/24/2024
+
                     # Draw rotated box
                     # print("x:", x)
                     # print("y:", y)
@@ -150,6 +160,7 @@ if __name__ == '__main__':
                     print(f"Bounding Box Coordinates and Orientation:")
                     print(f"Class: {cls_pred}, X: {x}, Y: {y}, Width: {w}, Length: {l}, Yaw: {yaw}")
                     custom_bev_utils.drawRotatedBox(img_bev, x, y, w, l, yaw, cnf.colors[int(cls_pred)])
+
 
             img_rgb = cv2.imread(img_paths[0])
             calib = custom_data_utils.Calibration(img_paths[0].replace(".png", ".txt").replace("image_2", "calib"))
@@ -187,8 +198,9 @@ if __name__ == '__main__':
             #     if cv2.waitKey(0) & 0xFF == 27:
             #         break
             import matplotlib.pyplot as plt
+
             if configs.show_image:
-                plt.figure(figsize=(10,10))
+                plt.figure(figsize=(10, 10))
                 out_img_rgb = cv2.cvtColor(out_img, cv2.COLOR_BGR2RGB)  # Convert from BGR to RGB
                 plt.imshow(out_img_rgb)
                 # plt.axis('off')  # Hide axes
@@ -203,10 +215,10 @@ if __name__ == '__main__':
                 plt.show()
                 print('\n[INFO] Close the image window to see the next sample...\n')
 
-            # if configs.show_image:
-            #     plt.figure(figsize=(10, 10))
-            #     img_bev_rgb = cv2.cvtColor(img_bev, cv2.COLOR_BGR2RGB)  # Convert BEV image from BGR to RGB
-            #     plt.imshow(img_bev_rgb)
+                # if configs.show_image:
+                #     plt.figure(figsize=(10, 10))
+                #     img_bev_rgb = cv2.cvtColor(img_bev, cv2.COLOR_BGR2RGB)  # Convert BEV image from BGR to RGB
+                #     plt.imshow(img_bev_rgb)
                 # plt.imshow(img_bev_rgb, origin='lower')
                 # plt.grid(which='both', color='gray', linestyle='--', linewidth=0.5)
                 # plt.minorticks_on()
@@ -215,9 +227,9 @@ if __name__ == '__main__':
                 # plt.title('BEV Image with Bounding Boxes')
 
                 # Move the X-axis to the top
-                #ax = plt.gca()  # Get the current Axes instance on the current figure matching the given keyword args, or create one.
-                #ax.xaxis.tick_top()
-                #ax.xaxis.set_label_position('top')  # Move the x-axis label to the top
+                # ax = plt.gca()  # Get the current Axes instance on the current figure matching the given keyword args, or create one.
+                # ax.xaxis.tick_top()
+                # ax.xaxis.set_label_position('top')  # Move the x-axis label to the top
 
                 # ax = plt.gca()  # Get the current Axes instance on the current figure
                 # ax.invert_yaxis()  # Invert the Y-axis to start from 0 at the bottom withou
@@ -227,4 +239,4 @@ if __name__ == '__main__':
 
     if out_cap:
         out_cap.release()
-    #cv2.destroyAllWindows()
+    # cv2.destroyAllWindows()

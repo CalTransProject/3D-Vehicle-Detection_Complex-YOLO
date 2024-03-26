@@ -281,7 +281,7 @@ def main():
     sample_id = "000100"
     lidar_file = os.path.join(dataset_dir, "velodyne", f"{sample_id}.bin")
     # label_file = os.path.join(dataset_dir, "label_2", f"{sample_id}.txt")
-    label_file = os.path.join(dataset_dir, "label_2_testing", f"{sample_id}.txt")
+    label_file = os.path.join(dataset_dir, "/misc/label_2_testing", f"{sample_id}.txt")
 
     # Load LiDAR data
     lidar_data = load_velo_scan(lidar_file)

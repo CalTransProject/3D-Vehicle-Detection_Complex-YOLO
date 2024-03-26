@@ -118,6 +118,7 @@ def get_corners(x, y, w, l, yaw):
 
     return bev_corners
 
+
 # def get_corners(x, y, width, length, yaw):
 #     """
 #     Calculate the corners of a given box in BEV space.
@@ -156,7 +157,7 @@ def build_yolo_target(labels):
         # ped and cyc labels are very small, so lets add some factor to height/width
         l = l + 0.3
         w = w + 0.3
-        # yaw = np.deg2rad(yaw) # 03/14/2024 Jonathan Cordova
+        # yaw = np.deg2rad(yaw)  # 03/14/2024 Jonathan Cordova
         yaw = np.pi * 2 - yaw
         if (bc["minX"] < x < bc["maxX"]) and (bc["minY"] < y < bc["maxY"]):
             y1 = (y - bc["minY"]) / (bc["maxY"] - bc["minY"])  # we should put this in [0,1], so divide max_size  80 m
@@ -196,7 +197,7 @@ def drawRotatedBox(img, x, y, w, l, yaw, color):
     cv2.polylines(img, [corners_int], True, color, 2)
     corners_int = bev_corners.reshape(-1, 2).astype(int)
     cv2.line(img, (corners_int[0, 0], corners_int[0, 1]), (corners_int[3, 0], corners_int[3, 1]), (255, 255, 0), 2)
-    #cv2.line(img, (int(corners_int[0, 0]), int(corners_int[0, 1])), (int(corners_int[3, 0]), int(corners_int[3, 1])), (255, 255, 0), 2)
+    # cv2.line(img, (int(corners_int[0, 0]), int(corners_int[0, 1])), (int(corners_int[3, 0]), int(corners_int[3, 1])), (255, 255, 0), 2)
 
 
 def draw_box_in_bev(rgb_map, target):
