@@ -37,9 +37,12 @@ class Object3d(object):
 
         # extract 3d bounding box information
         self.h = data[10]  # box height
-        self.w = data[9]  # box width
-        self.l = data[8]  # box length (in meters)
-        self.t = (data[11], data[12], data[13])  # location (x,y,z) in camera coord.
+        # self.w = data[9]  # box width
+        # self.l = data[8]  # box length (in meters)
+        self.w = data[8]  # box width
+        self.l = data[9]  # box length (in meters)
+        # self.t = (data[11], data[12], data[13])  # location (x,y,z) in camera coord.
+        self.t = (data[13], data[12], data[11])  # location (x,y,z) in camera coord.
         self.dis_to_cam = np.linalg.norm(self.t)
         self.ry = data[14]  # yaw angle (around Y-axis in camera coordinates) [-pi..pi]
         self.score = data[15] if data.__len__() == 16 else -1.0
