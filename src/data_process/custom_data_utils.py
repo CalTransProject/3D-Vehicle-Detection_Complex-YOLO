@@ -36,19 +36,20 @@ class Object3d(object):
         self.box2d = np.array([self.xmin, self.ymin, self.xmax, self.ymax])
 
         # extract 3d bounding box information
-        self.h = data[10]  # box height
-        self.w = data[8]  # box width
-        self.l = data[9]  # box length (in meters)
-        # self.h = data[8]  # box height
-        # self.w = data[9]  # box width
-        # self.l = data[10]  # box length (in meters)
+        # self.h = data[10]  # box height
+        # self.w = data[8]  # box width
+        # self.l = data[9]  # box length (in meters)
+        self.h = data[8]  # box height
+        self.w = data[9]  # box width
+        self.l = data[10]  # box length (in meters)
         # -----------------------------------------------
         # kitti data the x in matlab is z, y is x, and z is y.
         # So, in custom dataset, we switch them
         # -----------------------------------------------
         # self.t = (data[12], data[13], data[11])  # location (x,y,z) in camera coord. # before 03/22/2024 Jonathan C.
         # self.t = (data[13], data[11], data[12]) # This is currently not working for some reason!
-        self.t = (data[13], data[12], data[11]) # This one works!
+        # self.t = (data[13], data[12], data[11]) # This one works!
+        self.t = (data[11], data[12], data[13])  # New Update 03/26/2024
         self.dis_to_cam = np.linalg.norm(self.t)
         self.ry = data[14]  # yaw angle (around Y-axis in camera coordinates) [-pi..pi]
         self.score = data[15] if data.__len__() == 16 else -1.0
