@@ -143,12 +143,17 @@ if __name__ == '__main__':
                 # print(detections)
                 detections = rescale_boxes(detections, configs.img_size, img_bev.shape[:2])
                 for x, y, w, l, im, re, *_, cls_pred in detections:
+
+                    # Counter Clockwise Orientation
                     yaw = np.arctan2(im, re)
+
+                    # Clockwise Orientation
+                    # yaw = (-np.arctan2(im, re)) % (2 * np.pi)
 
                     # yaw = np.arctan2(im, re) + np.pi / 2 # -- Jonathan C. 03/24/2024
                     # yaw = np.deg2rad(yaw) # -- Jonathan C. 03/24/2024
                     # yaw = np.rad2deg(yaw)  # -- Jonathan C. 03/24/2024 back to degrees!
-                    # yaw = -yaw  # -- Jonathan C. 03/24/2024
+                    # yaw = -yaw  # -- Jonathan C. 03/27/2024
 
                     # Draw rotated box
                     # print("x:", x)
