@@ -131,6 +131,13 @@ def get_corners(x, y, w, l, yaw):
 #     Returns:
 #     - corners: Coordinates of the box corners
 #     """
+#
+#     # Jonathan Debugging
+#     # temp = width
+#     # width = length
+#     # length = temp
+#     # yaw = yaw + np.pi / 2
+#
 #     # Calculate rotation matrix
 #     rotation_matrix = np.array([
 #         [np.cos(yaw), -np.sin(yaw)],

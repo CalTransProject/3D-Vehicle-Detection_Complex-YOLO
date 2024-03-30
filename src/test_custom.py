@@ -146,10 +146,10 @@ if __name__ == '__main__':
                     # Original
                     yaw = np.arctan2(im, re)
 
-                    # This works! Rotate 90 degrees
-                    # yaw = np.arctan2(im, re) + np.pi / 2 # -- Jonathan C. 03/24/2024
-                    # This works! Rotate -90 counterclockwise (270 degrees clockwise)
-                    # yaw = np.arctan2(im, re) - np.pi / 2 # -- Jonathan C. 03/28/2024
+                    # Rotate 90 degrees
+                    # yaw = np.arctan2(im, re) + np.pi / 2
+                    # Rotate -90 counterclockwise (270 degrees clockwise)
+                    # yaw = np.arctan2(im, re) - np.pi / 2
 
                     # Clockwise Orientation
                     # yaw = (-np.arctan2(im, re)) % (2 * np.pi)
@@ -157,6 +157,10 @@ if __name__ == '__main__':
                     # yaw = np.deg2rad(yaw) # -- Jonathan C. 03/24/2024
                     # yaw = np.rad2deg(yaw)  # -- Jonathan C. 03/24/2024 back to degrees!
                     # yaw = -yaw  # -- Jonathan C. 03/27/2024
+
+                    # temp = w
+                    # w = l
+                    # l = temp
 
                     # Draw rotated box
                     # print("x:", x)
