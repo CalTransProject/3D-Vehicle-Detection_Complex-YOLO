@@ -91,6 +91,11 @@ def evaluate_mAP(val_loader, model, configs, logger):
             print("Targets before rescaling:", targets[:, 2:6])
             targets[:, 2:6] *= configs.img_size
             print("Targets after rescaling:", targets[:, 2:6])
+
+            # Extract Actual Yaw Angles from targets
+            # actual_yaws = targets[:, -1]  # Assuming yaw angle is the last column
+            # print("actual_yaws: ", actual_yaws)
+
             imgs = imgs.to(configs.device, non_blocking=True)
             # targets = targets.to(configs.device, non_blocking=True) # New add
 
@@ -115,6 +120,9 @@ def evaluate_mAP(val_loader, model, configs, logger):
 
         # Concatenate sample statistics
         true_positives, pred_scores, pred_labels = [np.concatenate(x, 0) for x in list(zip(*sample_metrics))]
+        # Print out the predicted labels
+        print("Predicted Labels:", pred_labels)
+        print("Actual Labels:", labels)
         precision, recall, AP, f1, ap_class = ap_per_class(true_positives, pred_scores, pred_labels, labels)
 
         # average_val_loss = total_loss / len(val_loader)  # Calculate average validation loss
