@@ -35,18 +35,36 @@ class Object3D(object):
         self.box2d = np.array([self.xmin, self.ymin, self.xmax, self.ymax])
 
         # extract 3d bounding box information
-        # self.h = data[8]  # box height
-        # self.w = data[9]  # box width
-        # self.l = data[10]  # box length (in meters)
-        self.xctr = float(data[11])  # Object's center x
-        self.yctr = float(data[12])  # Object's center y
-        self.zctr = float(data[13])  # Object's center z
-        self.h = data[10]  # box height
-        self.w = data[8]  # box width
-        self.l = data[9]  # box length (in meters)
-        # self.h = data[8]  # box height
-        # self.w = data[9]  # box width
-        # self.l = data[10]  # box length (in meters)
+        # self.xctr = float(data[12])  # Object's center x --CUSTOM LABELS BASES
+        # self.yctr = float(data[13])  # Object's center y --CUSTOM LABELS BASES
+        # self.zctr = float(data[11])  # Object's center z --CUSTOM LABELS BASES
+        # self.h = data[8]  # box height --CUSTOM LABELS BASES
+        # self.w = data[9]  # box width --CUSTOM LABELS BASES
+        # self.l = data[10]  # box length (in meters) --CUSTOM LABELS BASES
+
+        # extract 3d bounding box information
+        # self.xctr = float(data[13])  # Object's center x --CUSTOM LABELS TEST 1
+        # self.yctr = float(data[11])  # Object's center y --CUSTOM LABELS TEST 1
+        # self.zctr = float(data[12])  # Object's center z --CUSTOM LABELS TEST 1
+        # self.h = data[8]  # box height --CUSTOM LABELS TEST 1
+        # self.w = data[9]  # box width --CUSTOM LABELS TEST 1
+        # self.l = data[10]  # box length (in meters) --CUSTOM LABELS TEST 1
+
+        # extract 3d bounding box information
+        self.xctr = float(data[13])  # Object's center x --CUSTOM LABELS TEST 2
+        self.yctr = float(-data[11])  # Object's center y --CUSTOM LABELS TEST 2
+        self.zctr = float(data[12])  # Object's center z --CUSTOM LABELS TEST 2
+        self.h = data[8]  # box height --CUSTOM LABELS TEST 2
+        self.w = data[9]  # box width --CUSTOM LABELS TEST 2
+        self.l = data[10]  # box length (in meters) --CUSTOM LABELS TEST 2
+
+        # self.xctr = float(data[13])  # Object's center x --KITTI LABELS
+        # self.yctr = float(-data[11])  # Object's center y --KITTI LABELS
+        # self.zctr = float(data[12])  # Object's center z --KITTI LABELS
+        # self.h = data[8]  # box height --KITTI LABELS
+        # self.w = data[9]  # box width --KITTI LABELS
+        # self.l = data[10]  # box length (in meters) --KITTI LABELS
+
         self.t = (self.xctr, self.yctr, self.zctr)  # location (x,y,z) in camera coord.
         # self.t = (data[11], data[12], data[13])  # location (x,y,z) in camera coord.
         self.dis_to_cam = np.linalg.norm(self.t)
@@ -193,10 +211,10 @@ def add_labels_to_bev(bev_image, labels, boundary, discretization=(0.1, 0.1)):
             bev_w = w / discretization[1]
 
             # Convert yaw angle from degrees to radians if necessary
-            yaw_rad = np.deg2rad(yaw)  # Remove this line if yaw is already in radians
+            # yaw_rad = np.deg2rad(yaw)  # Remove this line if yaw is already in radians
 
             # Draw the rotated box on the BEV image
-            drawRotatedBox(bev_image, bev_x, bev_y, bev_w, bev_l, yaw_rad, color=(0, 255, 0))
+            drawRotatedBox(bev_image, bev_x, bev_y, bev_w, bev_l, yaw, color=(0, 255, 0))
 
     return bev_image
 
@@ -276,12 +294,13 @@ def drawRotatedBox(img, x, y, width, length, yaw, color=(0, 255, 0), thickness=2
 
 
 def main():
-    dataset_dir = "../../dataset/custom/training"
-    # dataset_dir = "../../dataset/kitti/training"
-    sample_id = "000100"
+    # dataset_dir = "../../dataset/custom/training"
+    dataset_dir = "../../dataset/kitti/training"
+    # sample_id = "000100"
+    sample_id = "000110"
     lidar_file = os.path.join(dataset_dir, "velodyne", f"{sample_id}.bin")
-    # label_file = os.path.join(dataset_dir, "label_2", f"{sample_id}.txt")
-    label_file = os.path.join(dataset_dir, "misc/label_2_testing", f"{sample_id}.txt")
+    label_file = os.path.join(dataset_dir, "label_2", f"{sample_id}.txt")
+    # label_file = os.path.join(dataset_dir, "misc/label_2_testing", f"{sample_id}.txt")
 
     # Load LiDAR data
     lidar_data = load_velo_scan(lidar_file)
