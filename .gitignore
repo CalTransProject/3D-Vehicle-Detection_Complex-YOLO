@@ -1,4 +1,4 @@
-dataset/kitti
+dataset/
 logs/
 checkpoints/
 results/
@@ -140,9 +140,11 @@ dataset/practice/testing
 dataset/practice/training
 dataset/custom/testing
 dataset/custom/training
+dataset/kitti/testing
+dataset/kitti/training
 
 src/my_custom_code/my_data_3d/
 src/my_custom_code/my_data_2d/
 src/my_custom_code/testing_purposes_data/
 src/my_custom_code/Notes.txt
-
+src/my_custom_code/my_data_labels/
