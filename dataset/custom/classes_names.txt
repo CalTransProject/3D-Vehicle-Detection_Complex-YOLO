@@ -1,0 +1,9 @@
+Car
+Pedestrian
+Cyclist
+Truck
+Motorcycle
+SUV
+Semi
+Bus
+Van

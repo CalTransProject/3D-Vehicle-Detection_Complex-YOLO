@@ -9,6 +9,6 @@ PyQt5
 tqdm==4.66.1
 scipy==1.11.3
 easydict==1.11
-shapely==2.0.0
+shapely==2.0.1
 matplotlib==3.8.0
-mayavi==4.8.2.dev0
+protobuf==3.20.0

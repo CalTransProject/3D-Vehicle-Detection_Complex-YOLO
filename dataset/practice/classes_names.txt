@@ -1,0 +1,7 @@
+Car
+Truck
+Motorcycle
+SUV
+Semi
+Bus
+Van

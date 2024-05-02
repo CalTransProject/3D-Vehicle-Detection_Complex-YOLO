@@ -31,6 +31,10 @@ class YoloLayer(nn.Module):
         super(YoloLayer, self).__init__()
         # Update the attributions when parsing the cfg during create the darknet
         self.num_classes = num_classes
+        # --------------------------------
+        # Custom Dataset
+        # self.num_classes = 7
+        # --------------------------------
         self.anchors = anchors
         self.num_anchors = len(anchors)
         self.stride = stride
@@ -251,3 +255,4 @@ class YoloLayer(nn.Module):
             }
 
             return output, total_loss
+
