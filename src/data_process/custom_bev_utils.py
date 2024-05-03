@@ -119,6 +119,43 @@ def get_corners(x, y, w, l, yaw):
     return bev_corners
 
 
+# def get_corners(x, y, width, length, yaw):
+#     """
+#     Calculate the corners of a given box in BEV space.
+#
+#     Parameters:
+#     - x, y: Center coordinates of the box
+#     - width, length: Size of the box
+#     - yaw: Rotation angle of the box in radians
+#
+#     Returns:
+#     - corners: Coordinates of the box corners
+#     """
+#
+#     # Jonathan Debugging
+#     # temp = width
+#     # width = length
+#     # length = temp
+#     # yaw = yaw + np.pi / 2
+#
+#     # Calculate rotation matrix
+#     rotation_matrix = np.array([
+#         [np.cos(yaw), -np.sin(yaw)],
+#         [np.sin(yaw), np.cos(yaw)]
+#     ])
+#
+#     # Define corners in local box coordinates
+#     local_corners = np.array([
+#         [length / 2, width / 2], [length / 2, -width / 2],
+#         [-length / 2, -width / 2], [-length / 2, width / 2]
+#     ])
+#
+#     # Rotate and translate corners
+#     corners = np.dot(local_corners, rotation_matrix.T) + np.array([x, y])
+#
+#     return corners
+
+
 def build_yolo_target(labels):
     bc = cnf.boundary
     target = []
@@ -167,7 +204,7 @@ def drawRotatedBox(img, x, y, w, l, yaw, color):
     cv2.polylines(img, [corners_int], True, color, 2)
     corners_int = bev_corners.reshape(-1, 2).astype(int)
     cv2.line(img, (corners_int[0, 0], corners_int[0, 1]), (corners_int[3, 0], corners_int[3, 1]), (255, 255, 0), 2)
-    #cv2.line(img, (int(corners_int[0, 0]), int(corners_int[0, 1])), (int(corners_int[3, 0]), int(corners_int[3, 1])), (255, 255, 0), 2)
+    # cv2.line(img, (int(corners_int[0, 0]), int(corners_int[0, 1])), (int(corners_int[3, 0]), int(corners_int[3, 1])), (255, 255, 0), 2)
 
 
 def draw_box_in_bev(rgb_map, target):

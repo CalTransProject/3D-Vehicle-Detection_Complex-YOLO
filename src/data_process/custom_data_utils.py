@@ -75,6 +75,7 @@ class Object3d(object):
 
 
 
+
 # class Object3d(object):
 #     ''' 3d object label '''
 #

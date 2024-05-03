@@ -110,7 +110,7 @@ if __name__ == '__main__':
 
     model.eval()
 
-
+    # start_frame_index = 100  # Set this to your desired starting frame index
     test_dataloader = create_test_dataloader(configs)
     with torch.no_grad():
         for batch_idx, (img_paths, imgs_bev) in enumerate(test_dataloader):
@@ -178,7 +178,14 @@ if __name__ == '__main__':
                 plt.figure(figsize=(10,10))  # You can adjust the figure size as needed
                 out_img_rgb = cv2.cvtColor(out_img, cv2.COLOR_BGR2RGB)  # Convert from BGR to RGB
                 plt.imshow(out_img_rgb)
-                plt.axis('off')  # Hide axes
+                # plt.axis('off')  # Hide axes
+                # Debugging -----------------------
+                plt.grid(which='both', color='gray', linestyle='--', linewidth=0.5)
+                plt.minorticks_on()
+                plt.xlabel('X axis')
+                plt.ylabel('Y axis')
+                plt.title('BEV Image with Bounding Boxes')
+                # Debugging -----------------------
                 plt.show()
                 print('\n[INFO] Close the image window to see the next sample...\n')
 
