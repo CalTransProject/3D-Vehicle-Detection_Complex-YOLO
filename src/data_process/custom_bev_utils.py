@@ -164,7 +164,7 @@ def build_yolo_target(labels):
         # ped and cyc labels are very small, so lets add some factor to height/width
         l = l + 0.3
         w = w + 0.3
-        # yaw = np.deg2rad(yaw)  # 03/14/2024 Jonathan Cordova
+        # yaw = np.deg2rad(yaw)
         yaw = np.pi * 2 - yaw
         if (bc["minX"] < x < bc["maxX"]) and (bc["minY"] < y < bc["maxY"]):
             y1 = (y - bc["minY"]) / (bc["maxY"] - bc["minY"])  # we should put this in [0,1], so divide max_size  80 m

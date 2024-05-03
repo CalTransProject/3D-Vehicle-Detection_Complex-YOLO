@@ -200,6 +200,27 @@ class CustomDataset(Dataset):
 
         return sample_id_list
 
+    # def remove_invalid_idx(self, image_idx_list):
+    #     """Discard samples which don't have current training class objects, which will not be used for training."""
+    #
+    #     sample_id_list = []
+    #     for sample_id in image_idx_list:
+    #         sample_id = int(sample_id)
+    #         objects = self.get_label(sample_id)
+    #         # Removed calibration-dependent steps
+    #         labels, noObjectLabels = custom_bev_utils.read_labels_for_bevbox(objects)
+    #         # Assuming `read_labels_for_bevbox` does not require calibration to filter relevant objects
+    #
+    #         if not noObjectLabels:
+    #             # Directly use the labels without transforming their coordinates
+    #             valid_list = [label for label in labels if int(label[0]) in cnf.CLASS_NAME_TO_ID.values()]
+    #             # This assumes labels are in a format where the class ID is the first element
+    #
+    #         if len(valid_list) > 0:
+    #             sample_id_list.append(sample_id)
+    #
+    #     return sample_id_list
+
     def check_point_cloud_range(self, xyz):
         """
         :param xyz: [x, y, z]

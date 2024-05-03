@@ -1,32 +1,32 @@
 import numpy as np
 
-class_list = ["Car", "Pedestrian", "Cyclist", "Truck", "Motorcycle", "SUV", "Semi", "Bus", "Van"]
-
-CLASS_NAME_TO_ID = {
-    'Car': 0,           # Original class
-    'Pedestrian': 1,    # Original class
-    'Cyclist': 2,       # Original class
-    'Truck': 3,         # New class
-    'Motorcycle': 4,    # New class
-    'SUV': 5,           # New class
-    'Semi': 6,          # New class
-    'Bus': 7,           # New class
-    'Van': 8            # New class
-}
-# class_list = ["Car", "Pedestrian", "Cyclist"]
+# class_list = ["Car", "Pedestrian", "Cyclist", "Truck", "Motorcycle", "SUV", "Semi", "Bus", "Van"]
 #
 # CLASS_NAME_TO_ID = {
-#     'Car': 0,
-#     'Pedestrian': 1,
-#     'Cyclist': 2,
-#     'Van': 0,
-#     'Person_sitting': 1,
-#     'Truck': 0,
-#     'Motorcycle': 2,
-#     'SUV': 0,
-#     'Semi': 0,
-#     'Bus': 0,
+#     'Car': 0,           # Original class
+#     'Pedestrian': 1,    # Original class
+#     'Cyclist': 2,       # Original class
+#     'Truck': 3,         # New class
+#     'Motorcycle': 4,    # New class
+#     'SUV': 5,           # New class
+#     'Semi': 6,          # New class
+#     'Bus': 7,           # New class
+#     'Van': 8            # New class
 # }
+class_list = ["Car", "Pedestrian", "Cyclist"]
+
+CLASS_NAME_TO_ID = {
+    'Car': 0,
+    'Pedestrian': 1,
+    'Cyclist': 2,
+    'Van': 0,
+    'Person_sitting': 1,
+    'Truck': 0,
+    'Motorcycle': 2,
+    'SUV': 0,
+    'Semi': 0,
+    'Bus': 0,
+}
 
 
 # Front side (of vehicle) Point Cloud boundary for BEV
@@ -54,18 +54,18 @@ BEV_HEIGHT = 608  # across x axis 0m ~ 50m
 
 DISCRETIZATION = (boundary["maxX"] - boundary["minX"]) / BEV_HEIGHT
 
-# colors = [[0, 255, 255], [0, 0, 255], [255, 0, 0]]
-colors = [
-    [0, 255, 255],    # Cyan for Car
-    [0, 0, 255],      # Blue for Pedestrian
-    [255, 0, 0],      # Red for Cyclist
-    [255, 255, 0],    # Yellow for Truck
-    [255, 0, 255],    # Magenta for Motorcycle
-    [0, 255, 0],      # Green for SUV
-    [255, 128, 0],    # Orange for Semi
-    [128, 0, 255],    # Purple for Bus
-    [0, 128, 255]     # Azure for Van
-]
+colors = [[0, 255, 255], [0, 0, 255], [255, 0, 0]]
+# colors = [
+#     [0, 255, 255],    # Cyan for Car
+#     [0, 0, 255],      # Blue for Pedestrian
+#     [255, 0, 0],      # Red for Cyclist
+#     [255, 255, 0],    # Yellow for Truck
+#     [255, 0, 255],    # Magenta for Motorcycle
+#     [0, 255, 0],      # Green for SUV
+#     [255, 128, 0],    # Orange for Semi
+#     [128, 0, 255],    # Purple for Bus
+#     [0, 128, 255]     # Azure for Van
+# ]
 
 # Following parameters are calculated as an average from KITTI dataset for simplicity
 #####################################################################################
