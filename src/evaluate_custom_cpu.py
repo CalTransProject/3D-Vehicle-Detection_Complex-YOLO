@@ -207,7 +207,7 @@ if __name__ == '__main__':
     for idx, cls in enumerate(ap_class):
         print("\t>>>\t Class {} ({}): precision = {:.4f}, recall = {:.4f}, AP = {:.4f}, f1: {:.4f}".format(cls, \
                                                                                                            class_names[
-                                                                                                               cls][:3],
+                                                                                                               cls][:],
                                                                                                            precision[
                                                                                                                idx],
                                                                                                            recall[idx],
