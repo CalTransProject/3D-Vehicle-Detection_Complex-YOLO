@@ -155,7 +155,7 @@ def parse_train_configs():
     ####################################################################
     ############## Dataset, logs, Checkpoints dir ######################
     ####################################################################
-    configs.dataset_dir = os.path.join('~/../param/3D-Vehicle-Detection_Complex-YOLO/dataset/kitti', 'dataset', 'kitti')
+    configs.dataset_dir = os.path.join('../../../param/3D-Vehicle-Detection_Complex-YOLO/', 'dataset', 'kitti')
     configs.checkpoints_dir = os.path.join(configs.working_dir, 'checkpoints', configs.saved_fn)
     configs.logs_dir = os.path.join(configs.working_dir, 'logs', configs.saved_fn)
 
