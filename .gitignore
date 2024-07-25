@@ -1,4 +1,4 @@
-dataset/
+dataset/*
 logs/
 checkpoints/
 results/
@@ -154,3 +154,6 @@ src/my_custom_code/my_data_labels/
 
 
 
+dataset/custom/ImageSets/test.txt
+dataset/custom/ImageSets/train.txt
+dataset/custom/ImageSets/val.txt
