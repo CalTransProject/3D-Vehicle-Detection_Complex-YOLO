@@ -371,39 +371,78 @@ def post_processing(outputs, conf_thresh=0.95, nms_thresh=0.4):
 
 
 def post_processing_v2(prediction, conf_thresh=0.95, nms_thresh=0.4):
-    """
-        Removes detections with lower object confidence score than 'conf_thres' and performs
-        Non-Maximum Suppression to further filter detections.
-        Returns detections with shape:
-            (x, y, w, l, im, re, object_conf, class_score, class_pred)
-    """
+    """Enhanced post-processing with vehicle-specific optimizations"""
     output = [None for _ in range(len(prediction))]
+    
+    # Vehicle-specific thresholds
+    vehicle_conf_thresh = 0.6  # Lower threshold for vehicles
+    vehicle_nms_thresh = 0.45  # Adjusted NMS threshold for vehicles
+    
     for image_i, image_pred in enumerate(prediction):
         # Filter out confidence scores below threshold
-        image_pred = image_pred[image_pred[:, 6] >= conf_thresh]
+        vehicle_mask = image_pred[:, -1] == 0  # Vehicle class
+        
+        # Apply different thresholds for vehicles
+        conf_mask = torch.zeros_like(image_pred[:, 6], dtype=torch.bool)
+        conf_mask[vehicle_mask] = image_pred[vehicle_mask, 6] >= vehicle_conf_thresh
+        conf_mask[~vehicle_mask] = image_pred[~vehicle_mask, 6] >= conf_thresh
+        
+        image_pred = image_pred[conf_mask]
+        
         # If none are remaining => process next image
         if not image_pred.size(0):
             continue
-        # Object confidence times class confidence
+            
+        # Calculate confidence scores
         score = image_pred[:, 6] * image_pred[:, 7:].max(dim=1)[0]
-        # Sort by it
+        
+        # Sort by score
         image_pred = image_pred[(-score).argsort()]
         class_confs, class_preds = image_pred[:, 7:].max(dim=1, keepdim=True)
         detections = torch.cat((image_pred[:, :7].float(), class_confs.float(), class_preds.float()), dim=1)
-        # Perform non-maximum suppression
+        
+        # Apply soft-NMS for vehicles
         keep_boxes = []
         while detections.size(0):
-            # large_overlap = rotated_bbox_iou(detections[0, :6].unsqueeze(0), detections[:, :6], 1.0, False) > nms_thres # not working
-            large_overlap = iou_rotated_single_vs_multi_boxes_cpu(detections[0, :6], detections[:, :6]) > nms_thresh
+            # Get distances for distance-aware NMS
+            distances = torch.norm(detections[:, :2], dim=1)
+            
+            # Calculate IoU with distance consideration
+            large_overlap = soft_nms_distance_aware(
+                detections[0, :6],
+                detections[:, :6],
+                distances,
+                sigma=0.5,
+                thresh=vehicle_nms_thresh if detections[0, -1] == 0 else nms_thresh
+            )
+            
             label_match = detections[0, -1] == detections[:, -1]
-            # Indices of boxes with lower confidence scores, large IOUs and matching labels
             invalid = large_overlap & label_match
+            
+            # Apply soft-NMS
             weights = detections[invalid, 6:7]
-            # Merge overlapping bboxes by order of confidence
             detections[0, :6] = (weights * detections[invalid, :6]).sum(0) / weights.sum()
+            
             keep_boxes += [detections[0]]
             detections = detections[~invalid]
-        if len(keep_boxes) > 0:
+        
+        if keep_boxes:
             output[image_i] = torch.stack(keep_boxes)
-
+    
     return output
+
+def soft_nms_distance_aware(reference_box, boxes, distances, sigma=0.5, thresh=0.001):
+    """
+    Soft-NMS implementation with distance awareness
+    """
+    # Calculate rotated IoU
+    ious = iou_rotated_single_vs_multi_boxes_cpu(reference_box, boxes)
+    
+    # Apply distance-aware penalty
+    distance_weights = torch.exp(-distances / distances.mean())
+    ious = ious * distance_weights
+    
+    # Apply soft-NMS formula
+    weights = torch.exp(-(ious * ious) / sigma)
+    
+    return weights > thresh

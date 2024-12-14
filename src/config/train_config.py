@@ -105,6 +105,28 @@ def parse_train_configs():
     ##############     Loss weight            ##########################
     ####################################################################
 
+    # Enhanced loss weights for better vehicle detection
+    parser.add_argument('--obj_scale', type=float, default=1.5,
+                        help='Object confidence loss weight')
+    parser.add_argument('--noobj_scale', type=float, default=80.0,
+                        help='No object confidence loss weight')
+    parser.add_argument('--lgiou_scale', type=float, default=5.0,
+                        help='GIoU loss weight')
+    parser.add_argument('--leular_scale', type=float, default=4.0,
+                        help='Euler angle loss weight')
+    parser.add_argument('--lobj_scale', type=float, default=70.0,
+                        help='Object detection loss weight')
+    parser.add_argument('--lcls_scale', type=float, default=40.0,
+                        help='Classification loss weight')
+
+    # Car-specific optimization parameters
+    parser.add_argument('--car_conf_thresh', type=float, default=0.6,
+                        help='Confidence threshold for vehicle detection')
+    parser.add_argument('--car_nms_thresh', type=float, default=0.45,
+                        help='NMS threshold for vehicle detection')
+    parser.add_argument('--min_vehicle_points', type=int, default=100,
+                        help='Minimum number of points for valid vehicle detection')
+
     ####################################################################
     ##############     Distributed Data Parallel            ############
     ####################################################################

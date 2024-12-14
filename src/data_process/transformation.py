@@ -435,3 +435,117 @@ class Cutout(object):
                 targets = targets[keep_target]
 
         return img, targets
+
+
+class VehicleAugmentation:
+    """Enhanced augmentation specifically for vehicle detection"""
+    def __init__(self, config):
+        self.min_points = config.min_vehicle_points
+        self.car_scales = {
+            'sedan': (4.2, 1.8),   # Length, width ranges
+            'suv': (4.8, 1.9),
+            'truck': (6.0, 2.2)
+        }
+    
+    def augment_vehicles(self, points, boxes, labels):
+        """Vehicle-specific augmentation pipeline"""
+        augmented_data = []
+        for points, box, label in zip(points, boxes, labels):
+            if label == 0:  # Vehicle class
+                # Apply vehicle-specific augmentation
+                aug_points = self._augment_vehicle_instance(points, box)
+                
+                # Add realistic occlusions
+                aug_points = self._add_realistic_occlusions(aug_points, box)
+                
+                # Enhance point density for distant vehicles
+                if self._is_distant_vehicle(box):
+                    aug_points = self._enhance_distant_vehicle(aug_points)
+                    
+                augmented_data.append(aug_points)
+        
+        return augmented_data
+    
+    def _augment_vehicle_instance(self, points, box):
+        """Apply vehicle-specific geometric augmentations"""
+        # Random rotation within reasonable range
+        angle = np.random.uniform(-np.pi/6, np.pi/6)
+        points = self._rotate_points(points, angle)
+        
+        # Scale augmentation based on vehicle type
+        scale = np.random.uniform(0.95, 1.05)
+        points = self._scale_points(points, scale)
+        
+        return points
+    
+    def _add_realistic_occlusions(self, points, box):
+        """Add realistic occlusion patterns"""
+        # Simulate common occlusion patterns
+        occlusion_patterns = [
+            'front', 'rear', 'side',
+            'partial_top', 'partial_bottom'
+        ]
+        pattern = np.random.choice(occlusion_patterns)
+        return self._apply_occlusion_pattern(points, box, pattern)
+    
+    def _enhance_distant_vehicle(self, points):
+        """Enhance point cloud density for distant vehicles"""
+        if len(points) < self.min_points:
+            # Interpolate additional points
+            new_points = self._interpolate_vehicle_points(points)
+            points = np.concatenate([points, new_points], axis=0)
+        return points
+    
+    def _rotate_points(self, points, angle):
+        # Rotate points around z-axis
+        rotation_matrix = np.array([
+            [np.cos(angle), -np.sin(angle), 0],
+            [np.sin(angle), np.cos(angle), 0],
+            [0, 0, 1]
+        ])
+        return np.dot(points, rotation_matrix)
+    
+    def _scale_points(self, points, scale):
+        # Scale points uniformly
+        return points * scale
+    
+    def _is_distant_vehicle(self, box):
+        # Check if vehicle is distant based on depth
+        return box[2] > 20
+    
+    def _apply_occlusion_pattern(self, points, box, pattern):
+        # Apply occlusion pattern to points
+        if pattern == 'front':
+            # Occlude front part of vehicle
+            points = points[points[:, 0] > box[0] - box[3]]
+        elif pattern == 'rear':
+            # Occlude rear part of vehicle
+            points = points[points[:, 0] < box[0] + box[3]]
+        elif pattern == 'side':
+            # Occlude side part of vehicle
+            points = points[points[:, 1] > box[1] - box[4]]
+        elif pattern == 'partial_top':
+            # Occlude partial top part of vehicle
+            points = points[points[:, 2] > box[2] - box[5]]
+        elif pattern == 'partial_bottom':
+            # Occlude partial bottom part of vehicle
+            points = points[points[:, 2] < box[2] + box[5]]
+        return points
+    
+    def _interpolate_vehicle_points(self, points):
+        # Interpolate additional points for distant vehicles
+        new_points = []
+        for i in range(len(points)):
+            for j in range(i + 1, len(points)):
+                # Interpolate points along line segment
+                interpolated_points = self._interpolate_line_segment(points[i], points[j])
+                new_points.extend(interpolated_points)
+        return np.array(new_points)
+    
+    def _interpolate_line_segment(self, point1, point2):
+        # Interpolate points along line segment
+        interpolated_points = []
+        for t in np.linspace(0, 1, 10):
+            interpolated_point = point1 * (1 - t) + point2 * t
+            interpolated_points.append(interpolated_point)
+        return interpolated_points
