@@ -64,14 +64,20 @@ def get_corners_vectorize(x, y, w, l, yaw):
 def get_polygons_areas_fix_xy(boxes, fix_xy=100.):
     """
     Args:
-        box: (num_boxes, 4) --> w, l, im, re
+        boxes: (num_boxes, N) where N can be 2 (w,l) or 4 (w,l,im,re)
     """
     device = boxes.device
     n_boxes = boxes.size(0)
     x = torch.full(size=(n_boxes,), fill_value=fix_xy, device=device, dtype=torch.float)
     y = torch.full(size=(n_boxes,), fill_value=fix_xy, device=device, dtype=torch.float)
-    w, l, im, re = boxes.t()
-    yaw = torch.atan2(im, re)
+    
+    if boxes.size(1) == 4:
+        w, l, im, re = boxes.t()
+        yaw = torch.atan2(im, re)
+    else:  # boxes.size(1) == 2
+        w, l = boxes.t()
+        yaw = torch.zeros_like(w)  # Default orientation for 2D boxes
+        
     boxes_conners = get_corners_vectorize(x, y, w, l, yaw)
     boxes_polygons = [cvt_box_2_polygon(box_) for box_ in boxes_conners]
     boxes_areas = w * l

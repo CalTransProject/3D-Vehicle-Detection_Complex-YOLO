@@ -114,7 +114,7 @@ class Reorg(nn.Module):
         hs = stride
         x = x.view(B, C, H / hs, hs, W / ws, ws).transpose(3, 4).contiguous()
         x = x.view(B, C, H / hs * W / ws, hs * ws).transpose(2, 3).contiguous()
-        x = x.view(B, C, hs * ws, H / hs, W / ws).transpose(1, 2).contiguous()
+        x = x.view(B, hs * ws * C, H / hs, W / ws).transpose(1, 2).contiguous()
         x = x.view(B, hs * ws * C, H / hs, W / ws)
         return x
 
@@ -167,33 +167,74 @@ class Darknet(nn.Module):
         outputs = dict()
         loss = 0.
         yolo_outputs = []
-        for block in self.blocks:
-            ind = ind + 1
-            # if ind > 0:
-            #    return x
-
+        layer_outputs = []
+        output = []
+        
+        # Validate input channels
+        if x.size(1) != int(self.blocks[0]['channels']):
+            raise ValueError(f"Expected input to have {self.blocks[0]['channels']} channels, but got {x.size(1)} channels")
+            
+        print(f"\nInput tensor shape: {x.shape}")
+        outputs[-1] = x  # Store input tensor
+        for i, block in enumerate(self.blocks[1:]):
+            ind = i + 1
             if block['type'] == 'net':
                 continue
             elif block['type'] in ['convolutional', 'maxpool', 'reorg', 'upsample', 'avgpool', 'softmax', 'connected']:
+                print(f"\nProcessing layer {ind} ({block['type']})")
+                print(f"Input shape: {x.shape}")
                 x = self.models[ind](x)
+                print(f"Output shape: {x.shape}")
                 outputs[ind] = x
             elif block['type'] == 'route':
+                print(f"\nProcessing route layer at index {ind}")
                 layers = block['layers'].split(',')
                 layers = [int(i) if int(i) > 0 else int(i) + ind for i in layers]
+                print(f"Route connections from layers: {layers}")
+                
                 if len(layers) == 1:
                     if 'groups' not in block.keys() or int(block['groups']) == 1:
                         x = outputs[layers[0]]
+                        print(f"Single route from layer {layers[0]}, tensor shape: {x.shape}")
+                        if 'channels' in block:
+                            expected_channels = int(block['channels'])
+                            if expected_channels != x.size(1):
+                                raise ValueError(f"Route layer expected {expected_channels} channels, but got {x.size(1)}")
                         outputs[ind] = x
                     else:
                         groups = int(block['groups'])
                         group_id = int(block['group_id'])
                         _, b, _, _ = outputs[layers[0]].shape
                         x = outputs[layers[0]][:, b // groups * group_id:b // groups * (group_id + 1)]
+                        print(f"Grouped route, tensor shape after grouping: {x.shape}")
                         outputs[ind] = x
                 elif len(layers) == 2:
                     x1 = outputs[layers[0]]
                     x2 = outputs[layers[1]]
+                    print(f"Route concatenating from:")
+                    print(f"  Layer {layers[0]}: shape={x1.shape}")
+                    print(f"  Layer {layers[1]}: shape={x2.shape}")
+                    
+                    # Add spatial dimension check and adjustment
+                    if x1.shape[2:] != x2.shape[2:]:
+                        # Downsample the tensor with larger spatial dimensions
+                        if x1.shape[2] > x2.shape[2]:
+                            x1 = F.interpolate(x1, size=x2.shape[2:], mode='nearest')
+                        else:
+                            x2 = F.interpolate(x2, size=x1.shape[2:], mode='nearest')
+                        print(f"After resizing:")
+                        print(f"  Layer {layers[0]}: shape={x1.shape}")
+                        print(f"  Layer {layers[1]}: shape={x2.shape}")
+                    
+                    # Verify channel count if specified
+                    if 'channels' in block:
+                        expected_channels = int(block['channels'])
+                        actual_channels = x1.size(1) + x2.size(1)
+                        if expected_channels != actual_channels:
+                            raise ValueError(f"Route layer expected {expected_channels} channels after concatenation, but got {actual_channels}")
+                    
                     x = torch.cat((x1, x2), 1)
+                    print(f"After concatenation: shape={x.shape}")
                     outputs[ind] = x
                 elif len(layers) == 4:
                     x1 = outputs[layers[0]]
@@ -235,16 +276,23 @@ class Darknet(nn.Module):
     def create_network(self, blocks):
         models = nn.ModuleList()
 
-        prev_filters = 3
+        # Initialize with the number of input channels from the [net] block
+        input_channels = int(blocks[0]['channels'])
+        prev_filters = input_channels  # Start with input channels
         out_filters = []
         prev_stride = 1
         out_strides = []
         conv_id = 0
-        for block in blocks:
-            if block['type'] == 'net':
-                prev_filters = int(block['channels'])
-                continue
-            elif block['type'] == 'convolutional':
+        ind = 0  # Add index counter
+
+        # Add an empty module at index 0 to maintain indexing
+        models.append(EmptyModule())
+        out_filters.append(input_channels)
+        out_strides.append(prev_stride)
+        ind += 1
+
+        for block in blocks[1:]:  # Skip the [net] block
+            if block['type'] == 'convolutional':
                 conv_id = conv_id + 1
                 batch_normalize = int(block['batch_normalize'])
                 filters = int(block['filters'])
@@ -253,15 +301,25 @@ class Darknet(nn.Module):
                 is_pad = int(block['pad'])
                 pad = (kernel_size - 1) // 2 if is_pad else 0
                 activation = block['activation']
+                
+                # Use explicit in_channels if specified, otherwise use prev_filters
+                in_channels = int(block['in_channels']) if 'in_channels' in block else prev_filters
+                
+                print(f"\nCreating conv layer {conv_id}:")
+                print(f"  in_channels: {in_channels}")
+                print(f"  out_channels: {filters}")
+                print(f"  kernel_size: {kernel_size}")
+                print(f"  stride: {stride}")
+                print(f"  padding: {pad}")
+                
                 model = nn.Sequential()
                 if batch_normalize:
                     model.add_module('conv{0}'.format(conv_id),
-                                     nn.Conv2d(prev_filters, filters, kernel_size, stride, pad, bias=False))
+                                   nn.Conv2d(in_channels, filters, kernel_size, stride, pad, bias=False))
                     model.add_module('bn{0}'.format(conv_id), nn.BatchNorm2d(filters))
-                    # model.add_module('bn{0}'.format(conv_id), BN2d(filters))
                 else:
                     model.add_module('conv{0}'.format(conv_id),
-                                     nn.Conv2d(prev_filters, filters, kernel_size, stride, pad))
+                                   nn.Conv2d(in_channels, filters, kernel_size, stride, pad))
                 if activation == 'leaky':
                     model.add_module('leaky{0}'.format(conv_id), nn.LeakyReLU(0.1, inplace=True))
                 elif activation == 'relu':
@@ -276,91 +334,103 @@ class Darknet(nn.Module):
                 prev_stride = stride * prev_stride
                 out_strides.append(prev_stride)
                 models.append(model)
+                ind += 1
+
             elif block['type'] == 'maxpool':
                 pool_size = int(block['size'])
                 stride = int(block['stride'])
                 if stride == 1 and pool_size % 2:
-                    # You can use Maxpooldark instead, here is convenient to convert onnx.
-                    # Example: [maxpool] size=3 stride=1
+                    # You can use Maxpooldark instead, here is convenient to convert
                     model = nn.MaxPool2d(kernel_size=pool_size, stride=stride, padding=pool_size // 2)
                 elif stride == pool_size:
-                    # You can use Maxpooldark instead, here is convenient to convert onnx.
-                    # Example: [maxpool] size=2 stride=2
                     model = nn.MaxPool2d(kernel_size=pool_size, stride=stride, padding=0)
                 else:
                     model = MaxPoolDark(pool_size, stride)
                 out_filters.append(prev_filters)
-                prev_stride = stride * prev_stride
                 out_strides.append(prev_stride)
                 models.append(model)
+                ind += 1
+
             elif block['type'] == 'avgpool':
                 model = GlobalAvgPool2d()
                 out_filters.append(prev_filters)
                 models.append(model)
+                ind += 1
+
             elif block['type'] == 'softmax':
                 model = nn.Softmax()
                 out_strides.append(prev_stride)
                 out_filters.append(prev_filters)
                 models.append(model)
+                ind += 1
+
             elif block['type'] == 'cost':
                 if block['_type'] == 'sse':
-                    model = nn.MSELoss(size_average=True)
+                    model = nn.MSELoss(reduction='mean')
                 elif block['_type'] == 'L1':
-                    model = nn.L1Loss(size_average=True)
+                    model = nn.L1Loss(reduction='mean')
                 elif block['_type'] == 'smooth':
-                    model = nn.SmoothL1Loss(size_average=True)
+                    model = nn.SmoothL1Loss(reduction='mean')
                 out_filters.append(1)
                 out_strides.append(prev_stride)
                 models.append(model)
+                ind += 1
+
             elif block['type'] == 'reorg':
                 stride = int(block['stride'])
                 prev_filters = stride * stride * prev_filters
                 out_filters.append(prev_filters)
-                prev_stride = prev_stride * stride
                 out_strides.append(prev_stride)
                 models.append(Reorg(stride))
+                ind += 1
+
             elif block['type'] == 'upsample':
                 stride = int(block['stride'])
                 out_filters.append(prev_filters)
-                prev_stride = prev_stride // stride
                 out_strides.append(prev_stride)
-
                 models.append(Upsample_expand(stride))
-                # models.append(Upsample_interpolate(stride))
+                ind += 1
 
             elif block['type'] == 'route':
                 layers = block['layers'].split(',')
-                ind = len(models)
-                layers = [int(i) if int(i) > 0 else int(i) + ind for i in layers]
-                if len(layers) == 1:
+                ind_from = [int(i) if int(i) > 0 else int(i) + ind for i in layers]
+                if len(ind_from) == 1:
                     if 'groups' not in block.keys() or int(block['groups']) == 1:
-                        prev_filters = out_filters[layers[0]]
-                        prev_stride = out_strides[layers[0]]
+                        prev_filters = out_filters[ind_from[0]]
+                        prev_stride = out_strides[ind_from[0]]
                     else:
-                        prev_filters = out_filters[layers[0]] // int(block['groups'])
-                        prev_stride = out_strides[layers[0]] // int(block['groups'])
-                elif len(layers) == 2:
-                    assert (layers[0] == ind - 1 or layers[1] == ind - 1)
-                    prev_filters = out_filters[layers[0]] + out_filters[layers[1]]
-                    prev_stride = out_strides[layers[0]]
-                elif len(layers) == 4:
-                    assert (layers[0] == ind - 1)
-                    prev_filters = out_filters[layers[0]] + out_filters[layers[1]] + out_filters[layers[2]] + \
-                                   out_filters[layers[3]]
-                    prev_stride = out_strides[layers[0]]
+                        prev_filters = out_filters[ind_from[0]] // int(block['groups'])
+                        prev_stride = out_strides[ind_from[0]] // int(block['groups'])
+                elif len(ind_from) == 2:
+                    assert (ind_from[0] == ind - 1 or ind_from[1] == ind - 1)
+                    if 'channels' in block:
+                        prev_filters = int(block['channels'])
+                    else:
+                        prev_filters = out_filters[ind_from[0]] + out_filters[ind_from[1]]
+                    prev_stride = out_strides[ind_from[0]]
+                elif len(ind_from) == 4:
+                    assert (ind_from[0] == ind - 1)
+                    if 'channels' in block:
+                        prev_filters = int(block['channels'])
+                    else:
+                        prev_filters = out_filters[ind_from[0]] + out_filters[ind_from[1]] + out_filters[ind_from[2]] + out_filters[ind_from[3]]
+                    prev_stride = out_strides[ind_from[0]]
                 else:
                     print("route error!!!")
 
                 out_filters.append(prev_filters)
                 out_strides.append(prev_stride)
                 models.append(EmptyModule())
+                ind += 1
+
             elif block['type'] == 'shortcut':
-                ind = len(models)
-                prev_filters = out_filters[ind - 1]
-                out_filters.append(prev_filters)
-                prev_stride = out_strides[ind - 1]
-                out_strides.append(prev_stride)
+                ind_from = int(block['from'])
+                ind_from = ind_from if ind_from > 0 else ind_from + ind
+                out_filters.append(out_filters[ind_from])
+                out_strides.append(out_strides[ind_from])
                 models.append(EmptyModule())
+                ind += 1
+
             elif block['type'] == 'connected':
                 filters = int(block['output'])
                 if block['activation'] == 'linear':
@@ -377,24 +447,22 @@ class Darknet(nn.Module):
                 out_filters.append(prev_filters)
                 out_strides.append(prev_stride)
                 models.append(model)
+                ind += 1
+
             elif block['type'] == 'yolo':
                 anchor_masks = [int(i) for i in block['mask'].split(',')]
                 anchors = [float(i) for i in block['anchors'].split(',')]
-                anchors = [(anchors[i], anchors[i + 1], math.sin(anchors[i + 2]), math.cos(anchors[i + 2])) for i in
-                           range(0, len(anchors), 3)]
+                anchors = [(anchors[i], anchors[i + 1]) for i in range(0, len(anchors), 2)]
                 anchors = [anchors[i] for i in anchor_masks]
-
                 num_classes = int(block['classes'])
-                self.num_classes = num_classes
-                scale_x_y = float(block['scale_x_y'])
+                scale_x_y = float(block['scale_x_y']) if 'scale_x_y' in block else None
                 ignore_thresh = float(block['ignore_thresh'])
-
-                yolo_layer = YoloLayer(num_classes=num_classes, anchors=anchors, stride=prev_stride,
-                                       scale_x_y=scale_x_y, ignore_thresh=ignore_thresh)
-
+                model = YoloLayer(num_classes, anchors, stride=prev_stride, scale_x_y=scale_x_y, ignore_thresh=ignore_thresh)
                 out_filters.append(prev_filters)
                 out_strides.append(prev_stride)
-                models.append(yolo_layer)
+                models.append(model)
+                ind += 1
+
             else:
                 print('unknown type %s' % (block['type']))
 

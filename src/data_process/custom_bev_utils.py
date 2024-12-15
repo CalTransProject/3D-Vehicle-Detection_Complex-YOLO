@@ -40,39 +40,48 @@ def makeBVFeature(PointCloud_, Discretization, bc):
 
     # Discretize Feature Map
     PointCloud = np.copy(PointCloud_)
+    
+    # Handle empty point cloud
+    if len(PointCloud) == 0:
+        RGB_Map = np.zeros((3, Height - 1, Width - 1))
+        return RGB_Map
+        
     PointCloud[:, 0] = np.int_(np.floor(PointCloud[:, 0] / Discretization))
     PointCloud[:, 1] = np.int_(np.floor(PointCloud[:, 1] / Discretization) + Width / 2)
 
-    # sort-3times
-    indices = np.lexsort((-PointCloud[:, 2], PointCloud[:, 1], PointCloud[:, 0]))
-    PointCloud = PointCloud[indices]
+    # Use more efficient sorting
+    sorted_indices = np.lexsort((PointCloud[:, 0], PointCloud[:, 1], -PointCloud[:, 2]))
+    PointCloud = PointCloud[sorted_indices]
 
     # Height Map
     heightMap = np.zeros((Height, Width))
+    
+    try:
+        _, indices = np.unique(PointCloud[:, 0:2], axis=0, return_index=True)
+        PointCloud_frac = PointCloud[indices]
+        max_height = float(np.abs(bc['maxZ'] - bc['minZ']))
+        heightMap[np.int_(PointCloud_frac[:, 0]), np.int_(PointCloud_frac[:, 1])] = PointCloud_frac[:, 2] / max_height
 
-    _, indices = np.unique(PointCloud[:, 0:2], axis=0, return_index=True)
-    PointCloud_frac = PointCloud[indices]
-    # some important problem is image coordinate is (y,x), not (x,y)
-    max_height = float(np.abs(bc['maxZ'] - bc['minZ']))
-    heightMap[np.int_(PointCloud_frac[:, 0]), np.int_(PointCloud_frac[:, 1])] = PointCloud_frac[:, 2] / max_height
+        # Intensity Map & DensityMap
+        intensityMap = np.zeros((Height, Width))
+        densityMap = np.zeros((Height, Width))
 
-    # Intensity Map & DensityMap
-    intensityMap = np.zeros((Height, Width))
-    densityMap = np.zeros((Height, Width))
+        _, indices, counts = np.unique(PointCloud[:, 0:2], axis=0, return_index=True, return_counts=True)
+        PointCloud_top = PointCloud[indices]
 
-    _, indices, counts = np.unique(PointCloud[:, 0:2], axis=0, return_index=True, return_counts=True)
-    PointCloud_top = PointCloud[indices]
+        normalizedCounts = np.minimum(1.0, np.log(counts + 1) / np.log(64))
 
-    normalizedCounts = np.minimum(1.0, np.log(counts + 1) / np.log(64))
+        intensityMap[np.int_(PointCloud_top[:, 0]), np.int_(PointCloud_top[:, 1])] = PointCloud_top[:, 3]
+        densityMap[np.int_(PointCloud_top[:, 0]), np.int_(PointCloud_top[:, 1])] = normalizedCounts
 
-    intensityMap[np.int_(PointCloud_top[:, 0]), np.int_(PointCloud_top[:, 1])] = PointCloud_top[:, 3]
-    densityMap[np.int_(PointCloud_top[:, 0]), np.int_(PointCloud_top[:, 1])] = normalizedCounts
-
-    RGB_Map = np.zeros((3, Height - 1, Width - 1))
-    RGB_Map[2, :, :] = densityMap[:cnf.BEV_HEIGHT, :cnf.BEV_WIDTH]  # r_map
-    RGB_Map[1, :, :] = heightMap[:cnf.BEV_HEIGHT, :cnf.BEV_WIDTH]  # g_map
-    RGB_Map[0, :, :] = intensityMap[:cnf.BEV_HEIGHT, :cnf.BEV_WIDTH]  # b_map
-
+        RGB_Map = np.zeros((3, Height - 1, Width - 1))
+        RGB_Map[2, :, :] = densityMap[:cnf.BEV_HEIGHT, :cnf.BEV_WIDTH]  # r_map
+        RGB_Map[1, :, :] = heightMap[:cnf.BEV_HEIGHT, :cnf.BEV_WIDTH]  # g_map
+        RGB_Map[0, :, :] = intensityMap[:cnf.BEV_HEIGHT, :cnf.BEV_WIDTH]  # b_map
+    except Exception as e:
+        print(f"Warning: Error processing point cloud: {e}")
+        RGB_Map = np.zeros((3, Height - 1, Width - 1))
+    
     return RGB_Map
 
 

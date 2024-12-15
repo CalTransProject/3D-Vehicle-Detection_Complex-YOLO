@@ -87,39 +87,47 @@ class CustomDataset(Dataset):
 
     def load_img_with_targets(self, index):
         """Load images and targets for the training and validation phase"""
+        try:
+            sample_id = int(self.sample_id_list[index])
 
-        sample_id = int(self.sample_id_list[index])
+            lidarData = self.get_lidar(sample_id)
+            objects = self.get_label(sample_id)
+            calib = self.get_calib(sample_id)
 
-        lidarData = self.get_lidar(sample_id)
-        objects = self.get_label(sample_id)
-        calib = self.get_calib(sample_id)
+            labels, noObjectLabels = custom_bev_utils.read_labels_for_bevbox(objects)
 
-        labels, noObjectLabels = custom_bev_utils.read_labels_for_bevbox(objects)
+            if not noObjectLabels:
+                labels[:, 1:] = transformation_custom.camera_to_lidar_box(labels[:, 1:], calib.V2C, calib.R0,
+                                                                   calib.P)  # convert rect cam to velo cord
 
-        if not noObjectLabels:
-            labels[:, 1:] = transformation_custom.camera_to_lidar_box(labels[:, 1:], calib.V2C, calib.R0,
-                                                               calib.P)  # convert rect cam to velo cord
+            if self.lidar_transforms is not None:
+                lidarData, labels[:, 1:] = self.lidar_transforms(lidarData, labels[:, 1:])
 
-        if self.lidar_transforms is not None:
-            lidarData, labels[:, 1:] = self.lidar_transforms(lidarData, labels[:, 1:])
+            b = custom_bev_utils.removePoints(lidarData, cnf.boundary)
+            rgb_map = custom_bev_utils.makeBVFeature(b, cnf.DISCRETIZATION, cnf.boundary)
+            target = custom_bev_utils.build_yolo_target(labels)
+            img_file = os.path.join(self.image_dir, '{:06d}.png'.format(sample_id))
 
-        b = custom_bev_utils.removePoints(lidarData, cnf.boundary)
-        rgb_map = custom_bev_utils.makeBVFeature(b, cnf.DISCRETIZATION, cnf.boundary)
-        target = custom_bev_utils.build_yolo_target(labels)
-        img_file = os.path.join(self.image_dir, '{:06d}.png'.format(sample_id))
+            # on image space: targets are formatted as (box_idx, class, x, y, w, l, im, re)
+            n_target = len(target)
+            targets = torch.zeros((n_target, 8))
+            if n_target > 0:
+                targets[:, 1:] = torch.from_numpy(target)
 
-        # on image space: targets are formatted as (box_idx, class, x, y, w, l, im, re)
-        n_target = len(target)
-        targets = torch.zeros((n_target, 8))
-        if n_target > 0:
-            targets[:, 1:] = torch.from_numpy(target)
+            rgb_map = torch.from_numpy(rgb_map).float()
 
-        rgb_map = torch.from_numpy(rgb_map).float()
+            if self.aug_transforms is not None:
+                rgb_map, targets = self.aug_transforms(rgb_map, targets)
 
-        if self.aug_transforms is not None:
-            rgb_map, targets = self.aug_transforms(rgb_map, targets)
-
-        return img_file, rgb_map, targets
+            return img_file, rgb_map, targets
+            
+        except Exception as e:
+            print(f"Error loading sample {sample_id}: {e}")
+            # Return empty tensors in case of error
+            rgb_map = torch.zeros((3, cnf.BEV_HEIGHT, cnf.BEV_WIDTH)).float()
+            targets = torch.zeros((0, 8))
+            img_file = ""
+            return img_file, rgb_map, targets
 
     def load_mosaic(self, index):
         """loads images in a mosaic

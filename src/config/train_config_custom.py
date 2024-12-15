@@ -22,19 +22,21 @@ def parse_train_configs():
     parser.add_argument('--saved_fn', type=str, default='complexer_yolo', metavar='FN',
                         help='The name using for saving logs, models,...')
 
-    parser.add_argument('--working-dir', type=str, default='../', metavar='PATH',
+    parser.add_argument('--working-dir', type=str, default='./', metavar='PATH',
                         help='The ROOT working directory')
+    parser.add_argument('--dataset-dir', type=str, default='/Volumes/SHARGE/RTTM/Zelzah Plummer/kitti_format', metavar='PATH',
+                        help='The path to the KITTI format dataset')
     ####################################################################
     ##############     Model configs            ########################
     ####################################################################
     parser.add_argument('-a', '--arch', type=str, default='darknet', metavar='ARCH',
                         help='The name of the model architecture')
-    parser.add_argument('--cfgfile', type=str, default='config/cfg/complex_yolov4.cfg', metavar='PATH',
+    parser.add_argument('--cfgfile', type=str, default='src/config/cfg/complex_yolov4.cfg', metavar='PATH',
                         help='The path for cfgfile (only for darknet)')
     parser.add_argument('--pretrained_path', type=str, default=None, metavar='PATH',
                         help='the path of the pretrained checkpoint')
     # ----------Adding these paths for the saved trained model after training---------- Jonathan
-    parser.add_argument("--model_def", type=str, default="./config/cfg/complex_yolov4.cfg", metavar="PATH",
+    parser.add_argument("--model_def", type=str, default="src/config/cfg/complex_yolov4.cfg", metavar="PATH",
                         help="path to model definition file")
     parser.add_argument('--save_path', type=str, default="../checkpoints/Model_complex_yolo_V4_Practice.pth", metavar='PATH',
                         help='the path of the save checkpoint')
@@ -42,6 +44,15 @@ def parse_train_configs():
     parser.add_argument('--use_giou_loss', action='store_true',
                         help='If true, use GIoU loss during training. If false, use MSE loss for training')
 
+    # Vehicle detection optimization parameters
+    parser.add_argument('--conf-thresh', type=float, default=0.6,
+                        help='Confidence threshold for predictions')
+    parser.add_argument('--nms-thresh', type=float, default=0.45,
+                        help='NMS threshold for predictions')
+    parser.add_argument('--iou-thresh', type=float, default=0.5,
+                        help='IOU threshold for evaluation')
+    parser.add_argument('--num-classes', type=int, default=9,  
+                        help='The number of classes')
     ####################################################################
     ##############     Dataloader and Running configs            #######
     ####################################################################
@@ -67,18 +78,18 @@ def parse_train_configs():
                         help='If true, dont evaluate the model on the val set')
     parser.add_argument('--num_samples', type=int, default=None,
                         help='Take a subset of the dataset to run and debug')
-    parser.add_argument('--num_workers', type=int, default=4,
-                        help='Number of threads for loading data')
-    parser.add_argument('--batch_size', type=int, default=4,
-                        help='mini-batch size (default: 4), this is the total'
-                             'batch size of all GPUs on the current node when using'
-                             'Data Parallel or Distributed Data Parallel')
+    parser.add_argument('--num_workers', type=int, default=4, help='number of workers for dataloader')
+    parser.add_argument('--batch-size', type=int, default=4,
+                        help='mini-batch size (default: 4), this is the total '
+                             'batch size of all GPUs on the current node when '
+                             'using Data Parallel or Distributed Data Parallel')
     parser.add_argument('--print_freq', type=int, default=50, metavar='N',
                         help='print frequency (default: 50)')
     parser.add_argument('--tensorboard_freq', type=int, default=50, metavar='N',
                         help='frequency of saving tensorboard (default: 50)')
     parser.add_argument('--checkpoint_freq', type=int, default=5, metavar='N',
                         help='frequency of saving checkpoints (default: 5)')
+    parser.add_argument('--accumulation_steps', type=int, default=4, help='gradient accumulation steps')
     ####################################################################
     ##############     Training strategy            ####################
     ####################################################################
@@ -89,20 +100,24 @@ def parse_train_configs():
                         help='number of total epochs to run')
     parser.add_argument('--lr_type', type=str, default='cosin',
                         help='the type of learning rate scheduler (cosin or multi_step)')
-    parser.add_argument('--lr', type=float, default=0.001, metavar='LR',
+    parser.add_argument('--learning_rate', type=float, default=0.001, metavar='LR',
                         help='initial learning rate')
     parser.add_argument('--minimum_lr', type=float, default=1e-7, metavar='MIN_LR',
                         help='minimum learning rate during training')
     parser.add_argument('--momentum', type=float, default=0.949, metavar='M',
                         help='momentum')
-    parser.add_argument('-wd', '--weight_decay', type=float, default=5e-4, metavar='WD',
-                        help='weight decay (default: 5e-4)')
-    parser.add_argument('--optimizer_type', type=str, default='adam', metavar='OPTIMIZER',
-                        help='the type of optimizer, it can be sgd or adam')
+    parser.add_argument('-wd', '--weight_decay', type=float, default=0.01, metavar='WD',
+                        help='weight decay for regularization')
+    parser.add_argument('--optimizer_type', type=str, default='adamw', metavar='OPTIMIZER',
+                        help='the type of optimizer, it can be sgd, adam, or adamw')
     parser.add_argument('--burn_in', type=int, default=50, metavar='N',
                         help='number of burn in step')
     parser.add_argument('--steps', nargs='*', default=[1500, 4000],
                         help='number of burn in step')
+    parser.add_argument('--device', type=str, default='mps', 
+                        help='Device to use for training (cpu, cuda, or mps for Apple Silicon)')
+    parser.add_argument('--mixed_precision', action='store_true',
+                        help='Enable mixed precision training for better performance')
 
     ####################################################################
     ##############     Loss weight            ##########################
@@ -135,11 +150,11 @@ def parse_train_configs():
                         help='only evaluate the model, not training')
     parser.add_argument('--resume_path', type=str, default=None, metavar='PATH',
                         help='the path of the resumed checkpoint')
-    parser.add_argument('--conf-thresh', type=float, default=0.5,
+    parser.add_argument('--conf-thresh-eval', type=float, default=0.5,
                         help='for evaluation - the threshold for class conf')
-    parser.add_argument('--nms-thresh', type=float, default=0.5,
+    parser.add_argument('--nms-thresh-eval', type=float, default=0.5,
                         help='for evaluation - the threshold for nms')
-    parser.add_argument('--iou-thresh', type=float, default=0.5,
+    parser.add_argument('--iou-thresh-eval', type=float, default=0.5,
                         help='for evaluation - the threshold for IoU')
 
     configs = edict(vars(parser.parse_args()))
@@ -147,7 +162,13 @@ def parse_train_configs():
     ####################################################################
     ############## Hardware configurations #############################
     ####################################################################
-    configs.device = torch.device('cpu' if configs.no_cuda else 'cuda')
+    if configs.device == 'mps':
+        configs.device = torch.device('mps')
+    elif configs.no_cuda:
+        configs.device = torch.device('cpu')
+    else:
+        configs.device = torch.device('cuda')
+
     configs.ngpus_per_node = torch.cuda.device_count()
 
     configs.pin_memory = True
@@ -155,7 +176,7 @@ def parse_train_configs():
     ####################################################################
     ############## Dataset, logs, Checkpoints dir ######################
     ####################################################################
-    configs.dataset_dir = os.path.join('../../../param/3D-Vehicle-Detection_Complex-YOLO/', 'dataset', 'kitti')
+    configs.dataset_dir = os.path.join(configs.working_dir, configs.dataset_dir)
     configs.checkpoints_dir = os.path.join(configs.working_dir, 'checkpoints', configs.saved_fn)
     configs.logs_dir = os.path.join(configs.working_dir, 'logs', configs.saved_fn)
 

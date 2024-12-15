@@ -56,24 +56,16 @@ def main():
 
 def main_worker(gpu_idx, configs):
     configs.gpu_idx = gpu_idx
-    configs.device = torch.device('cpu' if configs.gpu_idx is None else 'cuda:{}'.format(configs.gpu_idx))
 
-    if configs.distributed:
-        if configs.dist_url == "env://" and configs.rank == -1:
-            configs.rank = int(os.environ["RANK"])
-        if configs.multiprocessing_distributed:
-            # For multiprocessing distributed training, rank needs to be the
-            # global rank among all the processes
-            configs.rank = configs.rank * configs.ngpus_per_node + gpu_idx
-
-        dist.init_process_group(backend=configs.dist_backend, init_method=configs.dist_url,
-                                world_size=configs.world_size, rank=configs.rank)
-        configs.subdivisions = int(64 / configs.batch_size / configs.ngpus_per_node)
+    # Check if MPS is available
+    if torch.backends.mps.is_available():
+        configs.device = torch.device("cpu")  # Force CPU for now due to MPS compatibility issues
+        print("MPS available but using CPU for better compatibility")
     else:
-        configs.subdivisions = int(64 / configs.batch_size)
+        configs.device = torch.device("cpu")
+        print("MPS not available, using CPU")
 
-    configs.is_master_node = (not configs.distributed) or (
-            configs.distributed and (configs.rank % configs.ngpus_per_node == 0))
+    configs.is_master_node = True  # Since we're not using distributed training
 
     if configs.is_master_node:
         logger = Logger(configs.logs_dir, configs.saved_fn)
@@ -86,60 +78,36 @@ def main_worker(gpu_idx, configs):
 
     # model
     model = create_model(configs)
+    model = model.to(configs.device)
+
+    # Initialize scaler for MPS device
+    if configs.device.type == 'mps':
+        scaler = torch.cuda.amp.GradScaler()
+    else:
+        scaler = None
 
     # load weight from a checkpoint
-    if configs.pretrained_path is not None:
+    if configs.pretrained_path and configs.pretrained_path.lower() != 'none':
         assert os.path.isfile(configs.pretrained_path), "=> no checkpoint found at '{}'".format(configs.pretrained_path)
-
-        # ---------------------------------------------------------------
-        # CHANGE: PARTIALLY LOAD PRETRAINED WEIGHTS TO HANDLE LAYERS MISMATCH
-        # Load the pretrained weights
         pretrained_dict = torch.load(configs.pretrained_path, map_location=configs.device)
-
-        # Get the current model state dict
         model_dict = model.state_dict()
-
-        # Filter out weights that don't match in size
-        pretrained_dict = {k: v for k, v in pretrained_dict.items() if
-                           k in model_dict and model_dict[k].size() == v.size()}
-
-        # Update the current model's state dict
+        # Filter out unnecessary keys
+        pretrained_dict = {k: v for k, v in pretrained_dict.items() if k in model_dict and model_dict[k].shape == pretrained_dict[k].shape}
+        # Overwrite entries in the existing state dict
         model_dict.update(pretrained_dict)
-
-        # Load the updated state dict into the model
         model.load_state_dict(model_dict)
-        # ---------------------------------------------------------------
-
-        # ---------------------------------------------------------------
-        # model.load_state_dict(torch.load(configs.pretrained_path))
-        # model.load_state_dict(torch.load(configs.pretrained_path, map_location=torch.device('cpu')))
-
-        # ---------------------------------------------------------------
         if logger is not None:
             logger.info('loaded pretrained model at {}'.format(configs.pretrained_path))
+    else:
+        if logger is not None:
+            logger.info('Training from scratch - no pretrained weights loaded')
 
     # resume weights of model from a checkpoint
     if configs.resume_path is not None:
         assert os.path.isfile(configs.resume_path), "=> no checkpoint found at '{}'".format(configs.resume_path)
-        # ---------------------------------------------------------------
-        # CHANGE: ENSURE CORRECT PATH IS USED FOR RESUMING TRAINING
-        # model.load_state_dict(torch.load(configs.resume_path))
         model.load_state_dict(torch.load(configs.resume_path, map_location=configs.device))
-        # ---------------------------------------------------------------
-        # ---------------------------------------------------------------
-        # model.load_state_dict(torch.load(configs.resume_path))
-        # model.load_state_dict(torch.load(configs.pretrained_path, map_location=torch.device('cpu')))
-        # ---------------------------------------------------------------
         if logger is not None:
             logger.info('resume training model from checkpoint {}'.format(configs.resume_path))
-
-    # ---------------------------------------------------------------
-    # Data Parallel
-    # model = make_data_parallel(model, configs)
-    # CHANGE: CONSIDER USING GPU IF AVAILABLE
-    # Since we are not using Data Parallel (no GPUs), ensure the model is on CPU
-    model.to(configs.device)
-    # ---------------------------------------------------------------
 
     # Make sure to create optimizer after moving the model to cuda
     optimizer = create_optimizer(configs, model)
@@ -150,10 +118,7 @@ def main_worker(gpu_idx, configs):
     if configs.resume_path is not None:
         utils_path = configs.resume_path.replace('Model_', 'Utils_')
         assert os.path.isfile(utils_path), "=> no checkpoint found at '{}'".format(utils_path)
-        # ---------------------------------------------------------------
-        # utils_state_dict = torch.load(utils_path, map_location='cuda:{}'.format(configs.gpu_idx))
-        utils_state_dict = torch.load(utils_path, map_location=torch.device('cpu'))
-        # ---------------------------------------------------------------
+        utils_state_dict = torch.load(utils_path, map_location=configs.device)
         optimizer.load_state_dict(utils_state_dict['optimizer'])
         lr_scheduler.load_state_dict(utils_state_dict['lr_scheduler'])
         configs.start_epoch = utils_state_dict['epoch'] + 1
@@ -192,7 +157,7 @@ def main_worker(gpu_idx, configs):
         if configs.distributed:
             train_sampler.set_epoch(epoch)
         # train for one epoch
-        train_one_epoch(train_dataloader, model, optimizer, lr_scheduler, epoch, configs, logger, tb_writer)
+        train_one_epoch(train_dataloader, model, optimizer, lr_scheduler, epoch, configs, logger, tb_writer, scaler)
         if not configs.no_val:
             val_dataloader = create_val_dataloader(configs)
             print('number of batches in val_dataloader: {}'.format(len(val_dataloader)))
@@ -250,76 +215,92 @@ def cleanup():
     dist.destroy_process_group()
 
 
-def train_one_epoch(train_dataloader, model, optimizer, lr_scheduler, epoch, configs, logger, tb_writer):
-    batch_time = AverageMeter('Time', ':6.3f')
-    data_time = AverageMeter('Data', ':6.3f')
-    losses = AverageMeter('Loss', ':.4e')
-
-    progress = ProgressMeter(len(train_dataloader), [batch_time, data_time, losses],
-                             prefix="Train - Epoch: [{}/{}]".format(epoch, configs.num_epochs))
-
-    num_iters_per_epoch = len(train_dataloader)
-
-    # switch to train mode
-    model.train()
-    start_time = time.time()
-    for batch_idx, batch_data in enumerate(tqdm(train_dataloader)):
-        data_time.update(time.time() - start_time)
-        _, imgs, targets = batch_data
-        global_step = num_iters_per_epoch * (epoch - 1) + batch_idx + 1
-
-        batch_size = imgs.size(0)
-
-        targets = targets.to(configs.device, non_blocking=True)
-        imgs = imgs.to(configs.device, non_blocking=True)
-        total_loss, outputs = model(imgs, targets)
-
-        # For torch.nn.DataParallel case
-        if (not configs.distributed) and (configs.gpu_idx is None):
-            total_loss = torch.mean(total_loss)
-
-        # compute gradient and perform backpropagation
-        total_loss.backward()
-        if global_step % configs.subdivisions == 0:
-            optimizer.step()
-            # Adjust learning rate
-            if configs.step_lr_in_epoch:
-                lr_scheduler.step()
-                if tb_writer is not None:
-                    tb_writer.add_scalar('LR', lr_scheduler.get_lr()[0], global_step)
-            # zero the parameter gradients
+def train_one_epoch(train_dataloader, model, optimizer, lr_scheduler, epoch, configs, logger, tb_writer, scaler):
+    """
+    Train the model for one epoch
+    """
+    model.train()  # Set model to training mode
+    
+    # Initialize metrics
+    total_loss = 0
+    num_batches = len(train_dataloader)
+    
+    # Progress bar
+    progress_bar = tqdm(enumerate(train_dataloader), total=len(train_dataloader),
+                       desc=f'Training Epoch {epoch}', ncols=100)
+    
+    for batch_idx, batch_data in progress_bar:
+        try:
+            # Ensure batch_data is properly unpacked
+            if not isinstance(batch_data, (tuple, list)) or len(batch_data) != 3:
+                print(f"\nError: Unexpected batch_data format.")
+                print(f"batch_data type: {type(batch_data)}")
+                print(f"batch_data length: {len(batch_data) if hasattr(batch_data, '__len__') else 'N/A'}")
+                print(f"batch_data contents: {batch_data}")
+                continue
+                
+            paths, imgs, targets = batch_data
+            
+            # Debug information about tensors
+            print(f"\nBatch {batch_idx + 1}/{num_batches}")
+            print(f"Images shape: {imgs.shape}")
+            print(f"Targets shape: {targets.shape if targets is not None else 'None'}")
+            print(f"Number of images: {len(paths)}")
+            
+            # Zero the parameter gradients
             optimizer.zero_grad()
+            
+            # Forward pass
+            imgs = imgs.to(configs.device, non_blocking=True)
+            targets = targets.to(configs.device, non_blocking=True)
+            
+            # Scale loss for gradient accumulation
+            if scaler is not None:
+                # MPS doesn't support autocast yet, just do regular forward pass
+                loss, outputs = model(imgs, targets)
+                loss = loss / configs.accumulation_steps
+                scaler.scale(loss).backward()
+            else:
+                loss, outputs = model(imgs, targets)
+                loss = loss / configs.accumulation_steps
+                loss.backward()
+            
+            if (batch_idx + 1) % configs.accumulation_steps == 0:
+                if scaler is not None:
+                    scaler.step(optimizer)
+                    scaler.update()
+                else:
+                    optimizer.step()
+                optimizer.zero_grad()
+                
+                if lr_scheduler is not None:
+                    lr_scheduler.step()
 
-        # Clearing the CUDA cache ----GPU 11/20/2023 Jonathan C.
-        torch.cuda.empty_cache()
-        gc.collect()
-
-        if configs.distributed:
-            reduced_loss = reduce_tensor(total_loss.data, configs.world_size)
-        else:
-            reduced_loss = total_loss.data
-        losses.update(to_python_float(reduced_loss), batch_size)
-        # measure elapsed time
-        # torch.cuda.synchronize()
-        batch_time.update(time.time() - start_time)
-
-        if tb_writer is not None:
-            if (global_step % configs.tensorboard_freq) == 0:
-                tensorboard_log = get_tensorboard_log(model)
-                tb_writer.add_scalar('avg_loss', losses.avg, global_step)
-                for layer_name, layer_dict in tensorboard_log.items():
-                    tb_writer.add_scalars(layer_name, layer_dict, global_step)
-
-        # Log message
-        if logger is not None:
-            if (global_step % configs.print_freq) == 0:
-                logger.info(progress.get_message(batch_idx))
-
-        start_time = time.time()
+            total_loss += loss.item()
+            
+            # Update progress bar
+            avg_loss = total_loss / (batch_idx + 1)
+            progress_bar.set_postfix({
+                'batch_time': f'{time.time():.3f}s',
+                'data_time': f'{time.time():.3f}s',
+                'loss': f'{avg_loss:.4f}'
+            })
+            
+        except Exception as e:
+            print(f"\nError in batch {batch_idx}: {str(e)}")
+            print(f"Stack trace:")
+            import traceback
+            traceback.print_exc()
+            continue
+    
+    # Calculate average loss for the epoch
+    avg_loss = total_loss / num_batches
+    return avg_loss
 
 
 if __name__ == '__main__':
     try:
+        print("Starting training...")
         main()
     except KeyboardInterrupt:
         try:
